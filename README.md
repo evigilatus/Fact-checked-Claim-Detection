@@ -2,7 +2,7 @@
 
 ## Ресурси
  ### CLEF 2020, Task 2:
- 
+  - [Описание на задача](https://docs.google.com/document/d/1yNSdiwK_0EOuabtN1XXvqMfmyp406VtmzpH5FLwR5_M/edit#)
   - [Github repo](https://github.com/sshaar/clef2020-factchecking-task2)
   - [Статия на Преслав Наков](https://arxiv.org/pdf/2005.06058.pdf?fbclid=IwAR3Ta6vILOYZAr8AdMkHlR7m_5kgvsIJC0-X2RwPfKvrGxsiEruX0m99SSc)
   - [Статия на победителите](http://ceur-ws.org/Vol-2696/paper_134.pdf)

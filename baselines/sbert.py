@@ -17,7 +17,8 @@ sys.path.append('.')
 random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))
 sbert = SentenceTransformer('paraphrase-distilroberta-base-v1')
-
+texts = []
+encodings_list = []
 
 def load_vclaims(dir):
     vclaims_fp = glob(f'{dir}/*.json')
@@ -35,13 +36,8 @@ def load_vclaims(dir):
 def get_score(iclaim, vclaims_list, index, search_keys, size=10000):
     query = sbert.encode(iclaim)
 
-    # Compute the encodings for all sentences in a text
-    texts = [vclaim['text'] for vclaim in vclaims_list]
-    encodings_list = [sbert.encode(sent_tokenize(text)) for text in texts]
-
     # Compute mean scores by calculating cosine similarities between all claims and the query.
     scores = []
-
     for encoding in encodings_list:
         results = util.semantic_search(query, encoding, top_k=5)
         result_sum = 0
@@ -57,8 +53,10 @@ def get_scores(iclaims, vclaims_list, index, search_keys, size):
     scores = {}
 
     logging.info(f"Geting RM5 scores for {iclaims_count} iclaims and {vclaims_count} vclaims")
-
+    iclaim_no = 1
     for iclaim_id, iclaim in iclaims:
+        print(iclaim_no)
+        iclaim_no = iclaim_no + 1
         score = get_score(iclaim, vclaims_list, index, search_keys=search_keys, size=size)
         scores[iclaim_id] = score
     return scores
@@ -79,6 +77,10 @@ def run_baselines(args):
     all_iclaims = pd.read_csv(args.iclaims_file_path, sep='\t', names=['iclaim_id', 'iclaim'])
     wanted_iclaim_ids = pd.read_csv(args.dev_file_path, sep='\t', names=['iclaim_id', '0', 'vclaim_id', 'relevance'])
     wanted_iclaim_ids = wanted_iclaim_ids.iclaim_id.tolist()
+    
+    # Compute the encodings for all sentences in a text
+    texts = [vclaim['text'] for vclaim in vclaims_list]
+    encodings_list = [sbert.encode(sent_tokenize(text)) for text in texts]
 
     iclaims = []
     for iclaim_id in wanted_iclaim_ids:

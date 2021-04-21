@@ -18,7 +18,14 @@ sys.path.append('.')
 from scorer.main import evaluate
 from gensim import corpora
 from gensim.summarization import bm25
+from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+import nltk
 
+nltk.download('stopwords')
+
+en_stop = set(stopwords.words('english'))
+p_stemmer = PorterStemmer()
 
 random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))
@@ -35,15 +42,22 @@ def load_vclaims(dir):
         vclaims_list.append(vclaim)
     return vclaims, vclaims_list
 
+def preprocess(doc):
+    texts = doc.split()
+    lower = [text.lower() for text in texts]
+    stopped_tokens = [a for a in lower if not a in en_stop]
+    return [p_stemmer.stem(j) for j in stopped_tokens]
+
 def get_bm25(docs):
-    texts = [doc.split() for doc in docs]  # you can do preprocessing as removing stopwords
+    texts = [preprocess(doc) for doc in docs]  # you can do preprocessing as removing stopwords
     dictionary = corpora.Dictionary(texts)
     corpus = [dictionary.doc2bow(text) for text in texts]
     bm25_obj = bm25.BM25(corpus)
     return [bm25_obj, dictionary]
 
 def get_score(iclaim, bm25_obj, dictionary, vclaims_list, index, search_keys, size=10000):
-    query_doc = dictionary.doc2bow(iclaim.split())
+    claim_tokens = preprocess(iclaim)
+    query_doc = dictionary.doc2bow(claim_tokens)
     scores = bm25_obj.get_scores(query_doc)
     best_docs = sorted(range(len(scores)), key=lambda i: scores[i])[-size:]
     score = []
@@ -85,16 +99,17 @@ def run_baselines(args):
 
     # options are title, vclaim, text
     bm25_obj, dictionary = get_bm25([vclaim['text'] for vclaim in vclaims_list])
-    scores = get_scores(iclaims, bm25_obj, dictionary, vclaims_list, index, search_keys=args.keys, size=args.size)
-    ngram_baseline_fpath = join(ROOT_DIR, f'baselines/data/subtask_{args.subtask}_bm25_{args.lang}_{basename(args.dev_file_path)}')
-    formatted_scores = format_scores(scores)
-    with open(ngram_baseline_fpath, 'w') as f:
-        f.write(formatted_scores)
-    maps, mrr, precisions = evaluate(args.dev_file_path, ngram_baseline_fpath)
-    logging.info(f"Elasticsearch Baseline for Subtask-{args.subtask}--{args.lang}")
-    logging.info(f'All MAP scores on threshold from [1, 3, 5, 10, 20, 50, 1000]. {maps}')
-    logging.info(f'MRR score {mrr}')
-    logging.info(f'All P scores on threshold from [1, 3, 5, 10, 20, 50, 1000]. {precisions}')
+    print(dictionary)
+    # scores = get_scores(iclaims, bm25_obj, dictionary, vclaims_list, index, search_keys=args.keys, size=args.size)
+    # ngram_baseline_fpath = join(ROOT_DIR, f'baselines/data/subtask_{args.subtask}_bm25_{args.lang}_{basename(args.dev_file_path)}')
+    # formatted_scores = format_scores(scores)
+    # with open(ngram_baseline_fpath, 'w') as f:
+    #     f.write(formatted_scores)
+    # maps, mrr, precisions = evaluate(args.dev_file_path, ngram_baseline_fpath)
+    # logging.info(f"Elasticsearch Baseline for Subtask-{args.subtask}--{args.lang}")
+    # logging.info(f'All MAP scores on threshold from [1, 3, 5, 10, 20, 50, 1000]. {maps}')
+    # logging.info(f'MRR score {mrr}')
+    # logging.info(f'All P scores on threshold from [1, 3, 5, 10, 20, 50, 1000]. {precisions}')
 
 # python baselines/bm25.py --train-file-path=baselines/v1/train.tsv --dev-file-path=baselines/v1/train.tsv --vclaims-dir-path=baselines/politifact-vclaims --iclaims-file-path=baselines/v1/iclaims.queries --subtask=2b --lang=english
 if __name__ == '__main__':

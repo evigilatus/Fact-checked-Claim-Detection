@@ -18,7 +18,14 @@ sys.path.append('.')
 from scorer.main import evaluate
 from gensim import corpora
 from gensim.summarization import bm25
+from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+import nltk
 
+nltk.download('stopwords')
+
+en_stop = set(stopwords.words('english'))
+p_stemmer = PorterStemmer()
 
 random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))
@@ -35,15 +42,21 @@ def load_vclaims(dir):
         vclaims_list.append(vclaim)
     return vclaims, vclaims_list
 
+def preprocess(doc):
+    texts = doc.split()
+    lower = [text.lower() for text in texts]
+    stopped_tokens = [a for a in lower if not a in en_stop]
+    return [p_stemmer.stem(j) for j in stopped_tokens]
+
 def get_bm25(docs):
-    texts = [doc.split() for doc in docs]  # you can do preprocessing as removing stopwords
+    texts = [preprocess(doc) for doc in docs]  # you can do preprocessing as removing stopwords
     dictionary = corpora.Dictionary(texts)
     corpus = [dictionary.doc2bow(text) for text in texts]
     bm25_obj = bm25.BM25(corpus)
     return [bm25_obj, dictionary]
 
 def get_score(iclaim, bm25_title, dictionary_title, bm25_vclaim, dictionary_vclaim, bm25_text, dictionary_text, vclaims_list, index, search_keys, size=10000):
-    iclaims = iclaim.split()
+    iclaims = preprocess(iclaim)
     query_doc_title = dictionary_title.doc2bow(iclaims)
     scores_title = bm25_title.get_scores(query_doc_title)
     query_doc_vclaim = dictionary_vclaim.doc2bow(iclaims)

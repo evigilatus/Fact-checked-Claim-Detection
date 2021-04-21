@@ -6,19 +6,19 @@ import random
 import sys
 from glob import glob
 from os.path import join, dirname, basename, exists
-from scorer.main import evaluate
+
 from sentence_transformers import SentenceTransformer, util
 from nltk.tokenize import sent_tokenize
 import pandas as pd
 
 sys.path.append('.')
 
+from scorer.main import evaluate
 
 random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))
 sbert = SentenceTransformer('paraphrase-distilroberta-base-v1')
-texts = []
-encodings_list = []
+
 
 def load_vclaims(dir):
     vclaims_fp = glob(f'{dir}/*.json')
@@ -33,31 +33,40 @@ def load_vclaims(dir):
     return vclaims, vclaims_list
 
 
-def get_score(iclaim, vclaims_list, index, search_keys, size=10000):
-    query = sbert.encode(iclaim)
+def get_score(iclaim_encodding, vclaims_list, vclaim_encodings, index, search_keys, size=10000):
+    score = {}
 
-    # Compute mean scores by calculating cosine similarities between all claims and the query.
-    scores = []
-    for encoding in encodings_list:
-        results = util.semantic_search(query, encoding, top_k=5)
+    for i, vclaim in enumerate(vclaim_encodings):
+        results = util.semantic_search(iclaim_encodding, vclaim, top_k=5)
         result_sum = 0
-        for result in results:
-            result_sum += result['score']
-        scores.append((vclaims_list[encodings_list.index(encoding)]['vclaim_id'], result_sum / len(results)))
+        for j, result in enumerate(results):
+            result_sum += result[j]['score']
+        average = result_sum / len(results)
+        vclaim_id = vclaims_list[i]['vclaim_id']
+        score[vclaim_id] = average
+    score = sorted(list(score.items()), key=lambda x: x[1], reverse=True)
 
-    return scores
+    return score
 
 
 def get_scores(iclaims, vclaims_list, index, search_keys, size):
     iclaims_count, vclaims_count = len(iclaims), len(vclaims_list)
     scores = {}
 
+    # Compute the encodings for all iclaims
+    iclaims_encodings = [sbert.encode(iclaim) for iclaim in iclaims]
+    logging.info("All iclaims encoded successfully.")
+
+    # Compute the encodings for all vclaims in all texts
+    texts = [vclaim['text'] for vclaim in vclaims_list]
+    vclaim_encodings = [sbert.encode(sent_tokenize(text)) for text in texts]
+    logging.info("All vclaims encoded successfully.")
     logging.info(f"Geting RM5 scores for {iclaims_count} iclaims and {vclaims_count} vclaims")
-    iclaim_no = 1
+    counter = 0
+
     for iclaim_id, iclaim in iclaims:
-        print(iclaim_no)
-        iclaim_no = iclaim_no + 1
-        score = get_score(iclaim, vclaims_list, index, search_keys=search_keys, size=size)
+        score = get_score(iclaims_encodings[counter][1], vclaims_list, vclaim_encodings, index, search_keys=search_keys, size=size)
+        counter += 1
         scores[iclaim_id] = score
     return scores
 
@@ -66,7 +75,7 @@ def format_scores(scores):
     output_string = ''
     for iclaim_id in scores:
         for i, (vclaim_id, score) in enumerate(scores[iclaim_id]):
-            output_string += f"{iclaim_id}\tQ0\t{vclaim_id}\t{i + 1}\t{score}\telasic\n"
+            output_string += f"{iclaim_id}\tQ0\t{vclaim_id}\t{i + 1}\t{score}\tsbert\n"
     return output_string
 
 
@@ -77,10 +86,6 @@ def run_baselines(args):
     all_iclaims = pd.read_csv(args.iclaims_file_path, sep='\t', names=['iclaim_id', 'iclaim'])
     wanted_iclaim_ids = pd.read_csv(args.dev_file_path, sep='\t', names=['iclaim_id', '0', 'vclaim_id', 'relevance'])
     wanted_iclaim_ids = wanted_iclaim_ids.iclaim_id.tolist()
-    
-    # Compute the encodings for all sentences in a text
-    texts = [vclaim['text'] for vclaim in vclaims_list]
-    encodings_list = [sbert.encode(sent_tokenize(text)) for text in texts]
 
     iclaims = []
     for iclaim_id in wanted_iclaim_ids:
@@ -92,7 +97,7 @@ def run_baselines(args):
     # options are title, vclaim, text
     scores = get_scores(iclaims, vclaims_list, index, search_keys=args.keys, size=args.size)
     ngram_baseline_fpath = join(ROOT_DIR,
-                                f'baselines/data/subtask_{args.subtask}_bm25_{args.lang}_{basename(args.dev_file_path)}')
+                                f'baselines/data/subtask_{args.subtask}_sbert_{args.lang}_{basename(args.dev_file_path)}')
     formatted_scores = format_scores(scores)
     with open(ngram_baseline_fpath, 'w') as f:
         f.write(formatted_scores)

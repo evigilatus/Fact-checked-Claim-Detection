@@ -69,7 +69,7 @@ def get_scores(iclaims, bm25_obj, dictionary, vclaims_list, index, search_keys, 
     scores = {}
 
     logging.info(f"Geting RM5 scores for {iclaims_count} iclaims and {vclaims_count} vclaims")
-    for iclaim_id, iclaim in iclaims:
+    for iclaim_id, iclaim in iclaims[:1]:
         score = get_score(iclaim, bm25_obj, dictionary, vclaims_list, index, search_keys=search_keys, size=size)
         scores[iclaim_id] = score
     return scores
@@ -100,7 +100,6 @@ def run_baselines(args):
 
     # options are title, vclaim, text
     bm25_obj, dictionary = get_bm25([vclaim['text'] for vclaim in vclaims_list])
-    print(dictionary)
     scores = get_scores(iclaims, bm25_obj, dictionary, vclaims_list, index, search_keys=args.keys, size=args.size)
     ngram_baseline_fpath = join(ROOT_DIR, f'baselines/data/subtask_{args.subtask}_bm25_{args.lang}_{basename(args.dev_file_path)}')
     formatted_scores = format_scores(scores)

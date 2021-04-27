@@ -1,5 +1,11 @@
 import itertools
 import numpy as np
+from os.path import join, dirname, basename, exists
+import pandas as pd
+import joblib
+import random
+random.seed(0)
+ROOT_DIR = dirname(dirname(__file__))
 
 from sklearn import svm, linear_model
 from sklearn.model_selection import KFold
@@ -67,8 +73,6 @@ class RankSVM(svm.LinearSVC):
         self
         """
         X_trans, y_trans = transform_pairwise(X, y)
-        print("x_trans")
-        print(X_trans)
         super(RankSVM, self).fit(X_trans, y_trans)
         return self
 
@@ -105,21 +109,46 @@ def run_test():
     # as showcase, we will create some non-linear data
     # and print the performance of ranking vs linear regression
 
-    np.random.seed(1)
-    n_samples, n_features = 300, 5
-    true_coef = np.random.randn(n_features)
-    print(true_coef)
-    X = np.random.randn(n_samples, n_features)
-    print(X)
-    noise = np.random.randn(n_samples) / np.linalg.norm(true_coef)
-    y = np.dot(X, true_coef)
-    print(y)
-    y = np.arctan(y)  # add non-linearities
-    y += .1 * noise  # add noise
-    Y = np.c_[y, np.mod(np.arange(n_samples), 5)]  # add query fake id
-    print(Y)
+    # np.random.seed(1)
+    # n_samples, n_features = 300, 5
+    # true_coef = np.random.randn(n_features)
+    # # print(true_coef)
+    # X = np.random.randn(n_samples, n_features)
+    # # print(X)
+    # noise = np.random.randn(n_samples) / np.linalg.norm(true_coef)
+    # y = np.dot(X, true_coef)
+    # # print(y)
+    # y = np.arctan(y)  # add non-linearities
+    # y += .1 * noise  # add noise
+    # Y = np.c_[y, np.mod(np.arange(n_samples), 5)]  # add query fake id
+    # # print(Y)
     cv = KFold(n_splits=5)
-    train, test = cv.split(X, y).__next__()
+    # columns = ['iclaim_id', 'vclaim_id', 'title', 'vclaim', 'text', 'scores'])
+    df = pd.read_csv(join(ROOT_DIR, f'baselines/data/rank-encoded.csv'))
+    # df['iclaim_encoded'] = df['iclaim_id'].apply(lambda x: int("".join([str(ord(item)) for item in x])))
+    # df.to_csv(join(ROOT_DIR, f'baselines/data/rank-encoded.csv'))
+    size = 100000
+    X = [
+        df['title'][:size],
+        df['vclaim'][:size],
+        df['text'][:size]
+    ]
+
+    Y = [
+        df['scores'][:size],
+        df['iclaim_encoded'][:size]
+    ]
+
+    X = np.transpose(X)
+    Y = np.transpose(Y)
+    # print(np.shape(X))
+    # print(np.shape(Y))
+    # print(X[:10])
+    # print(Y[:10])
+    # print(df.sample(100))
+    # print(df.describe())
+
+    train, test = cv.split(X, Y).__next__()
 
     # make a simple plot out of it
     import pylab as pl
@@ -132,9 +161,11 @@ def run_test():
 
     # print the performance of ranking
     rank_svm = RankSVM().fit(X[train], Y[train])
-    # X_trans, y_trans = transform_pairwise(X[test], Y[test])
+
+    joblib.dump(rank_svm, join(ROOT_DIR,"baselines/data/rank_svm.joblib"))
     print("scores")
-    print(rank_svm.decision_function(X[test]))
+    loaded_rank_svm = joblib.load(join(ROOT_DIR, "baselines/data/rank_svm.joblib"))
+    print(loaded_rank_svm.decision_function(X[test]))
 
     # print('Performance of ranking ', rank_svm.get_2(X[test], Y[test]))
 
@@ -146,4 +177,4 @@ def run_test():
     # print('Performance of linear regression ', score)
 
 
-run_test();
+run_test()

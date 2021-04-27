@@ -61,7 +61,8 @@ def get_scores(args, iclaims, vclaims_list, index, search_keys, size):
     else:
         # Compute the encodings for all iclaims
         iclaims_encodings = [sbert.encode(iclaim) for iclaim in iclaims]
-        # np.save('iclaims_embeddings.npy', np.array(iclaims_encodings))
+        if args.store_embeddings:
+            np.save('iclaims_embeddings.npy', np.array(iclaims_encodings))
         logging.info("All iclaims encoded successfully.")
 
     if args.vclaims_embeddings_path:
@@ -72,7 +73,8 @@ def get_scores(args, iclaims, vclaims_list, index, search_keys, size):
         # Compute the encodings for all vclaims in all texts
         texts = [vclaim['text'] for vclaim in vclaims_list]
         vclaim_encodings = [sbert.encode(sent_tokenize(text)) for text in texts]
-        # np.save('vclaims_embeddings.npy', np.array(vclaim_encodings))
+        if args.store_embeddings:
+            np.save('vclaims_embeddings.npy', np.array(vclaim_encodings))
         logging.info("All vclaims encoded successfully.")
 
     logging.info(f"Geting RM5 scores for {iclaims_count} iclaims and {vclaims_count} vclaims")
@@ -148,6 +150,8 @@ if __name__ == '__main__':
     parser.add_argument("--iclaims-embeddings-path", "-ie", required=False, type=str,
                         help="The absolute path to embeddings to be used for iclaims")
     parser.add_argument("--vclaims-embeddings-path", "-ve", required=False, type=str,
+                        help="The absolute path to embeddings to be used for vclaims")
+    parser.add_argument("--store-embeddings", "-se", required=False, type=bool, default=False,
                         help="The absolute path to embeddings to be used for vclaims")
 
     args = parser.parse_args()

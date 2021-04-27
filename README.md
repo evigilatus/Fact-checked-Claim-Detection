@@ -26,4 +26,4 @@
 - [FaceBook FairSeq Translator](https://github.com/pytorch/fairseq)
 
 ### Експерименти
-- [Описание и коментари] (https://docs.google.com/document/d/15G5nBYrVV3UATuqH6XN42YpSlAmC80JSpgOrjZvkVJQ/edit#heading=h.h651lqk1uo8r)
+- [Описание и коментари](https://docs.google.com/document/d/15G5nBYrVV3UATuqH6XN42YpSlAmC80JSpgOrjZvkVJQ/edit#heading=h.h651lqk1uo8r)

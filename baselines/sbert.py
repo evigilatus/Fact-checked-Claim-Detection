@@ -7,6 +7,7 @@ import sys
 from glob import glob
 from os.path import join, dirname, basename, exists
 
+import numpy as np
 from sentence_transformers import SentenceTransformer, util
 from nltk.tokenize import sent_tokenize
 import pandas as pd
@@ -49,18 +50,31 @@ def get_score(iclaim_encodding, vclaims_list, vclaim_encodings, index, search_ke
     return score
 
 
-def get_scores(iclaims, vclaims_list, index, search_keys, size):
+def get_scores(args, iclaims, vclaims_list, index, search_keys, size):
     iclaims_count, vclaims_count = len(iclaims), len(vclaims_list)
     scores = {}
 
-    # Compute the encodings for all iclaims
-    iclaims_encodings = [sbert.encode(iclaim) for iclaim in iclaims]
-    logging.info("All iclaims encoded successfully.")
+    if args.iclaims_embeddings_path:
+        # Load encodings from path
+        iclaims_encodings = np.load(args.iclaims_embeddings_path, allow_pickle=True)
+        logging.info("All iclaims embeddings loaded successfully.")
+    else:
+        # Compute the encodings for all iclaims
+        iclaims_encodings = [sbert.encode(iclaim) for iclaim in iclaims]
+        # np.save('iclaims_embeddings.npy', np.array(iclaims_encodings))
+        logging.info("All iclaims encoded successfully.")
 
-    # Compute the encodings for all vclaims in all texts
-    texts = [vclaim['text'] for vclaim in vclaims_list]
-    vclaim_encodings = [sbert.encode(sent_tokenize(text)) for text in texts]
-    logging.info("All vclaims encoded successfully.")
+    if args.vclaims_embeddings_path:
+        # Load encodings from path
+        vclaim_encodings = np.load(args.vclaims_embeddings_path, allow_pickle=True)
+        logging.info("All vclaims embeddings loaded successfully.")
+    else:
+        # Compute the encodings for all vclaims in all texts
+        texts = [vclaim['text'] for vclaim in vclaims_list]
+        vclaim_encodings = [sbert.encode(sent_tokenize(text)) for text in texts]
+        # np.save('vclaims_embeddings.npy', np.array(vclaim_encodings))
+        logging.info("All vclaims encoded successfully.")
+
     logging.info(f"Geting RM5 scores for {iclaims_count} iclaims and {vclaims_count} vclaims")
     counter = 0
 
@@ -95,7 +109,7 @@ def run_baselines(args):
     index = f"{args.subtask}-{args.lang}"
 
     # options are title, vclaim, text
-    scores = get_scores(iclaims, vclaims_list, index, search_keys=args.keys, size=args.size)
+    scores = get_scores(args, iclaims, vclaims_list, index, search_keys=args.keys, size=args.size)
     ngram_baseline_fpath = join(ROOT_DIR,
                                 f'baselines/data/subtask_{args.subtask}_sbert_{args.lang}_{basename(args.dev_file_path)}')
     formatted_scores = format_scores(scores)
@@ -131,6 +145,10 @@ if __name__ == '__main__':
     parser.add_argument("--lang", "-l", required=True, type=str,
                         choices=['arabic', 'english'],
                         help="The language of the subtask")
+    parser.add_argument("--iclaims-embeddings-path", "-ie", required=False, type=str,
+                        help="The absolute path to embeddings to be used for iclaims")
+    parser.add_argument("--vclaims-embeddings-path", "-ve", required=False, type=str,
+                        help="The absolute path to embeddings to be used for vclaims")
 
     args = parser.parse_args()
     run_baselines(args)

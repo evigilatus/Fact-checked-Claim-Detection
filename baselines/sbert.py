@@ -62,7 +62,7 @@ def get_scores(args, iclaims, vclaims_list, index, search_keys, size):
         # Compute the encodings for all iclaims
         iclaims_encodings = [sbert.encode(iclaim) for iclaim in iclaims]
         if args.store_embeddings:
-            np.save('iclaims_embeddings.npy', np.array(iclaims_encodings))
+            np.save('embeddings/iclaims_embeddings.npy', np.array(iclaims_encodings))
         logging.info("All iclaims encoded successfully.")
 
     if args.vclaims_embeddings_path:
@@ -74,7 +74,7 @@ def get_scores(args, iclaims, vclaims_list, index, search_keys, size):
         texts = [vclaim['text'] for vclaim in vclaims_list]
         vclaim_encodings = [sbert.encode(sent_tokenize(text)) for text in texts]
         if args.store_embeddings:
-            np.save('vclaims_embeddings.npy', np.array(vclaim_encodings))
+            np.save('embeddings/vclaims_embeddings.npy', np.array(vclaim_encodings))
         logging.info("All vclaims encoded successfully.")
 
     logging.info(f"Geting RM5 scores for {iclaims_count} iclaims and {vclaims_count} vclaims")

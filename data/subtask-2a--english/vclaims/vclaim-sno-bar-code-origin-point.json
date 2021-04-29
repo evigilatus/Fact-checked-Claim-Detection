@@ -1,0 +1,8 @@
+{
+  "title": "Can You Determine a Product\u2019s Country of Origin by Its Bar Code?",
+  "subtitle": "Finding out where a given product was manufactured is not so simple as looking at its bar code.",
+  "author": "David Mikkelson",
+  "date": "28 October 2008",
+  "vclaim_id": "vclaim-sno-bar-code-origin-point",
+  "vclaim": "The first three digits of a bar code indicate a product's country of origin."
+}

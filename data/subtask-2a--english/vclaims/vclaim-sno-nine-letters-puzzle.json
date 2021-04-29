@@ -1,0 +1,8 @@
+{
+  "title": "Nine Letters Puzzle",
+  "subtitle": "Find a nine-letter English word that remains a valid word as each of its letters is successively removed.",
+  "author": "David Mikkelson",
+  "date": "19 August 2012",
+  "vclaim_id": "vclaim-sno-nine-letters-puzzle",
+  "vclaim": "The English language has at least one nine-letter word that remains a valid word as each of its letters is successively removed."
+}

@@ -90,7 +90,14 @@ class RankSVM(svm.LinearSVC):
             the rows in X.
         """
         if hasattr(self, 'coef_'):
-            return np.argsort(np.dot(X, self.coef_.T))
+            s = np.sort(np.dot(X, self.coef_.T))
+            return s
+        else:
+            raise ValueError("Must call fit() prior to predict()")
+
+    def evaluate(self, X):
+        if hasattr(self, 'coef_'):
+            return np.dot(X, self.coef_.T)
         else:
             raise ValueError("Must call fit() prior to predict()")
 
@@ -101,9 +108,6 @@ class RankSVM(svm.LinearSVC):
         X_trans, y_trans = transform_pairwise(X, y)
         return np.mean(super(RankSVM, self).predict(X_trans) == y_trans)
 
-    def get_2(self, X, y):
-        X_trans, y_trans = transform_pairwise(X, y)
-        return super(RankSVM, self).predict(X_trans)
 
 # Should be like that to handle model load/dump
 if __name__ == "__main__":
@@ -140,6 +144,7 @@ if __name__ == "__main__":
     train, test = cv.split(X, Y).__next__()
 
     rank_svm = RankSVM(max_iter=3000).fit(X[train], Y[train])
-    print('Performance of ranking ', rank_svm.score(X[test], Y[test]))
 
-    joblib.dump(rank_svm, join(ROOT_DIR,"baselines/data/rank_svm-6.joblib"))
+    print('Performance of ranking ', rank_svm.predict(X[test], Y[test]))
+
+    joblib.dump(rank_svm, join(ROOT_DIR,"baselines/data/rank_svm-7.joblib"))

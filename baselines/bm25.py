@@ -69,7 +69,7 @@ def get_scores(iclaims, bm25_obj, dictionary, vclaims_list, index, search_keys, 
     scores = {}
 
     logging.info(f"Geting RM5 scores for {iclaims_count} iclaims and {vclaims_count} vclaims")
-    for iclaim_id, iclaim in iclaims[:1]:
+    for iclaim_id, iclaim in iclaims:
         score = get_score(iclaim, bm25_obj, dictionary, vclaims_list, index, search_keys=search_keys, size=size)
         scores[iclaim_id] = score
     return scores

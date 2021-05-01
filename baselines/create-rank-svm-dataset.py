@@ -71,7 +71,7 @@ def get_score(
     tfidf_iclaim = vectorizer.transform([iclaim])
     tfidf_scores = linear_kernel(tfidf_iclaim, tfidf_title).flatten()
     scores = [(scores_title[i] + scores_vclaim[i] + scores_text[i])/3 for i in range(len(scores_title))]
-    best_docs = sorted(range(len(scores)), key=lambda i: scores[i])[:100]
+    best_docs = sorted(range(len(scores)), key=lambda i: scores[i])[:-100]
     best_score = []
     for best_doc in best_docs:
         best_score.append((

@@ -138,7 +138,7 @@ def run_baselines(args):
     index = f"{args.subtask}-{args.lang}"
 
     scores = get_scores(iclaims, vclaims_list, index, search_keys=args.keys, size=args.size)
-    print("her")
+
     ngram_baseline_fpath = join(ROOT_DIR, f'baselines/data/subtask_{args.subtask}_bm25-all-rank-svm_{args.lang}_{basename(args.dev_file_path)}')
     formatted_scores = format_scores(scores)
     with open(ngram_baseline_fpath, 'w') as f:

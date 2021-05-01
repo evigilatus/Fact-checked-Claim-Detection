@@ -26,7 +26,7 @@ print([tokenizer.decode(t, skip_special_tokens=True) for t in translated])
 import csv
 import os
 import json
-
+from glob import glob
 from nltk.tokenize import sent_tokenize
 from transformers import MarianMTModel, MarianTokenizer
 
@@ -54,17 +54,51 @@ class Translator:
         else:
             return [self.lang_prefix + " " + line for line in text]
 
-if __name__ == "__main__":
+    @staticmethod
+    def back_translate(forward_model, backward_model, text):
+        tgt_text = forward_model.translate(sent_tokenize(text))
+        return " ".join(backward_model.translate(tgt_text))
+
+
+def back_translate_tsv_tweets():
     dir = os.path.join("..", "data", "subtask-2a--english")
     file_name = "processed-tweets-train-dev.tsv"
     out_file = file_name.replace(".tsv", ".tr.tsv")
-    en_ar = Translator(*Translator.EN_AR)
-    ar_en = Translator(*Translator.AR_EN)
 
-    with open(os.path.join(dir, file_name), newline='', encoding="utf-8") as ifile, open(os.path.join(dir, out_file), 'w', newline='', encoding="utf-8") as ofile:
+    with open(
+        os.path.join(dir, file_name), newline="", encoding="utf-8"
+    ) as ifile, open(
+        os.path.join(dir, out_file), "w", newline="", encoding="utf-8"
+    ) as ofile:
         reader = csv.reader(ifile, delimiter="\t")
         writer = csv.writer(ofile, delimiter="\t")
         for tweet_id, text in reader:
             arab = en_ar.translate(sent_tokenize(text))
             eng = ar_en.translate(arab)
-            writer.writerow([tweet_id, ' '.join(eng)])
+            writer.writerow([tweet_id, " ".join(eng)])
+
+
+if __name__ == "__main__":
+    en_ar = Translator(*Translator.EN_AR)
+    ar_en = Translator(*Translator.AR_EN)
+    dir = os.path.join("..", "data", "subtask-2a--english", "vclaims")
+    file_names = glob(dir + "/*.json")
+    print(len(file_names))
+    for file_name in sorted(file_names):
+        out_name = file_name.replace(".json", "_tr.json")
+        print(file_name)
+        with open(file_name) as input, open(out_name, "w") as output:
+            content = json.load(input)
+            if content.get("title"):
+                content["title"] = Translator.back_translate(
+                    en_ar, ar_en, content["title"]
+                )
+            if content.get("subtitle"):
+                content["subtitle"] = Translator.back_translate(
+                    en_ar, ar_en, content["subtitle"]
+                )
+            if content.get("vclaim"):
+                content["vclaim"] = Translator.back_translate(
+                    en_ar, ar_en, content["vclaim"]
+                )
+            json.dump(content, output, indent=None)

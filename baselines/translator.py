@@ -84,7 +84,7 @@ if __name__ == "__main__":
     dir = os.path.join("..", "data", "subtask-2a--english", "vclaims")
     file_names = glob(dir + "/*.json")
     print(len(file_names))
-    for file_name in sorted(file_names):
+    for file_name in sorted(file_names)[25398:]:
         out_name = file_name.replace(".json", "_tr.json")
         print(file_name)
         with open(file_name) as input, open(out_name, "w") as output:

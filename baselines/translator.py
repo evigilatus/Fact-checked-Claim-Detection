@@ -78,15 +78,11 @@ def back_translate_tsv_tweets():
             writer.writerow([tweet_id, " ".join(eng)])
 
 
-if __name__ == "__main__":
-    en_ar = Translator(*Translator.EN_AR)
-    ar_en = Translator(*Translator.AR_EN)
+def back_translate_tweet_jsons():
     dir = os.path.join("..", "data", "subtask-2a--english", "vclaims")
     file_names = glob(dir + "/*.json")
-    print(len(file_names))
-    for file_name in sorted(file_names)[25398:]:
+    for file_name in sorted(file_names):
         out_name = file_name.replace(".json", "_tr.json")
-        print(file_name)
         with open(file_name) as input, open(out_name, "w") as output:
             content = json.load(input)
             if content.get("title"):
@@ -102,3 +98,21 @@ if __name__ == "__main__":
                     en_ar, ar_en, content["vclaim"]
                 )
             json.dump(content, output, indent=None)
+
+
+if __name__ == "__main__":
+    en_ar = Translator(*Translator.EN_AR)
+    ar_en = Translator(*Translator.AR_EN)
+    dir = os.path.join("..", "data", "subtask-2a--english", "test_data")
+    input_file_name = os.path.join(dir, "processed-tweets-test.tsv")
+    output_file_name = input_file_name.replace(".tsv", "_tr.tsv")
+    lines = []
+    with open(input_file_name, newline="", encoding="utf-8") as input, open(
+        output_file_name, "w", newline="", encoding="utf-8"
+    ) as output:
+        reader = csv.reader(input, delimiter="\t")
+        writer = csv.writer(output, delimiter="\t")
+        for tweet_id, text in reader:
+            new_text = Translator.back_translate(en_ar, ar_en, text)
+            lines.append((tweet_id, new_text))
+        writer.writerows(lines)

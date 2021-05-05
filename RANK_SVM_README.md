@@ -36,3 +36,14 @@ python baselines/ranksvm.py
 
 ## Execute Re-Ranking
 python baselines/bm25-all-rank-svm.py --train-file-path=baselines/v1/train.tsv --dev-file-path=baselines/v1/train.tsv --vclaims-dir-path=baselines/politifact-vclaims --iclaims-file-path=baselines/v1/iclaims.queries --subtask=2b --lang=english
+
+## Cornell RankSVM
+1. Generate file: Generate_RankSVM_File.ipynb	
+2. After generating traning file:
+	- train rank svm:
+		svm_rank_learn -c 38 subtask2a/rank_top20 subtask2a/model_top20_linear
+	- test rank svm:
+		svm_rank_classify subtask2a/rank_top20 subtask2a/model_top20_linear subtask2a/predictions_top20_linear
+3. Calculate MRR for predictions: Generate_RankSVM_File.ipynb	
+	
+

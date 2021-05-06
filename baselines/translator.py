@@ -100,10 +100,9 @@ def back_translate_tweet_jsons():
             json.dump(content, output, indent=None)
 
 
-if __name__ == "__main__":
-    en_ar = Translator(*Translator.EN_AR)
-    ar_en = Translator(*Translator.AR_EN)
-    dir = os.path.join("..", "data", "subtask-2a--english", "test_data")
+def translate_processed_tweets(en_ar, ar_en):
+    dir = os.path.join(os.path.dirname(__file__), "..", "data", "subtask-2a--english", "test_data")
+    print(dir)
     input_file_name = os.path.join(dir, "processed-tweets-test.tsv")
     output_file_name = input_file_name.replace(".tsv", "_tr.tsv")
     lines = []
@@ -116,3 +115,29 @@ if __name__ == "__main__":
             new_text = Translator.back_translate(en_ar, ar_en, text)
             lines.append((tweet_id, new_text))
         writer.writerows(lines)
+
+
+if __name__ == "__main__":
+    en_ar = Translator(*Translator.EN_AR)
+    ar_en = Translator(*Translator.AR_EN)
+    dir = os.path.join(os.path.basename(__file__), "..", "data", "subtask-2b--english", "politifact-vclaims")
+    print(dir)
+    file_names = glob(dir + "/*.json")
+    for file_name in sorted(file_names):
+        out_file_name = file_name.replace("politifact", "translated")
+        with open(file_name) as input, open(out_file_name, "w") as output:
+            print(out_file_name)
+            content = json.load(input)
+            if content.get("title"):
+                content["title"] = Translator.back_translate(
+                    en_ar, ar_en, content["title"]
+                )
+            if content.get("text"):
+                content["text"] = Translator.back_translate(
+                    en_ar, ar_en, content["text"]
+                )
+            if content.get("vclaim"):
+                content["vclaim"] = Translator.back_translate(
+                    en_ar, ar_en, content["vclaim"]
+                )
+            json.dump(content, output, indent=None)

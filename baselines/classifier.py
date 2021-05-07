@@ -24,6 +24,8 @@ from scorer.main import evaluate
 
 random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))
+DATA_DIR = "data/subtask-2b--english/politifact-vclaims/"
+
 sbert = SentenceTransformer('paraphrase-distilroberta-base-v1')
 num_sentences = 4
 
@@ -56,6 +58,19 @@ def load_vclaims(dir):
         vclaims_list.append(vclaim)
     return vclaims, vclaims_list
 
+def load_claim_files(claim_ids):
+    # For each title, find the corresponding json file
+    loaded_claims = []
+    for id in claim_ids['vclaim_id']:
+        claim_filename = DATA_DIR + id + ".json"
+        with open(claim_filename) as claim_json:
+            claim = json.load(claim_json)
+            loaded_claims.append(claim['vclaim'])
+
+    return loaded_claims
+
+
+
 def get_encodings(args, tclaims, iclaims, vclaims_list, dclaims):
     iclaims_count, vclaims_count = len(iclaims), len(vclaims_list)
     scores = {}
@@ -66,7 +81,8 @@ def get_encodings(args, tclaims, iclaims, vclaims_list, dclaims):
         logging.info("All train embeddings loaded successfully.")
     else:
         # Compute the encodings for the train data
-        train_encodings = [sbert.encode(tclaim) for tclaim in tclaims]
+        loaded_tclaims = load_claim_files(tclaims)
+        train_encodings = [sbert.encode(tclaim) for tclaim in loaded_tclaims]
         if args.store_embeddings:
             np.save('embeddings/tclaims_embeddings.npy', np.array(train_encodings))
         logging.info("All train claims encoded successfully.")
@@ -100,7 +116,8 @@ def get_encodings(args, tclaims, iclaims, vclaims_list, dclaims):
         logging.info("All dclaims embeddings loaded successfully.")
     else:
         # Compute the encodings for all vclaims in all texts
-        dclaim_encodings = [sbert.encode(sent_tokenize(dclaim)) for dclaim in dclaims]
+        loaded_dclaims = load_claim_files(dclaims)
+        dclaim_encodings = [sbert.encode(sent_tokenize(dclaim)) for dclaim in loaded_dclaims]
         if args.store_embeddings:
             np.save('embeddings/dclaims_embeddings.npy', np.array(dclaim_encodings))
         logging.info("All dclaims encoded successfully.")
@@ -160,6 +177,9 @@ def create_classifier(train_labels, train_embeddings, vclaim_embeddings):
     # Obtain the embeddings and scores to train the MLP (top-4 sentences per each article)
     train_embeddings = get_sbert_body_scores(train_embeddings, vclaim_embeddings, num_sentences)
 
+    logging.info(f"Train embeddings shape-{train_embeddings.reshape((-1, num_sentences))}")
+    logging.info(f"Train labels shape-{train_labels.reshape((-1, 1))}")
+
     model.fit(train_embeddings.reshape((-1, num_sentences)),
               train_labels.reshape((-1, 1)),
               epochs=15,
@@ -175,8 +195,8 @@ def predict(model, iclaim_embeddings, vclaim_embeddings):
 
 
 def get_labels(vclaim_ids, verified_claims):
-    labels = np.zeros((len(vclaim_ids), len(verified_claims)))
-    # labels = np.zeros((len(vclaim_ids), 19249))
+    # labels = np.zeros((len(vclaim_ids), len(verified_claims)))
+    labels = np.zeros((len(vclaim_ids), 19249))
 
     for i, vclaim_id in enumerate(vclaim_ids):
         print(vclaim_id, str(int(vclaim_id[-5:])), str(i))

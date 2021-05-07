@@ -18,6 +18,9 @@ from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras.models import Sequential
 from tqdm import tqdm
 
+import nltk
+nltk.download('punkt')
+
 sys.path.append('.')
 
 from scorer.main import evaluate
@@ -135,16 +138,15 @@ def format_scores(scores):
 
 def get_sbert_body_scores(input_embeddings, vclaim_embeddings, num_sentences):
     sbert_vclaims_text_scores = np.zeros((len(input_embeddings), num_sentences, len(vclaim_embeddings)))
-    print(len(input_embeddings))
     for vclaim_id, sbert_embeddings in enumerate(tqdm(vclaim_embeddings)):
         if not len(sbert_embeddings):
             continue
-        vclaim_text_score = cosine_similarity(input_embeddings, sbert_embeddings)
-        vclaim_text_score = np.sort(vclaim_text_score)
         n = min(num_sentences, len(sbert_embeddings))
-        sbert_vclaims_text_scores[:, :n, vclaim_id] = vclaim_text_score[:, -n:]
-
-    print(sbert_vclaims_text_scores.shape)
+        vclaim_text_queries_scores = util.semantic_search(input_embeddings, sbert_embeddings, top_k=n)
+        vclaim_text_queries_scores = [
+            [vclaim_text_score['score'] for vclaim_text_score in vclaim_text_query_scores] for vclaim_text_query_scores in vclaim_text_queries_scores
+        ]
+        sbert_vclaims_text_scores[:, :n, vclaim_id] = vclaim_text_queries_scores
 
     return sbert_vclaims_text_scores.transpose((0, 2, 1))
 
@@ -244,9 +246,8 @@ def run_baselines(args):
     logging.info(f'All P scores on threshold from [1, 3, 5, 10, 20, 50, 1000]. {precisions}')
 
 
-# python baselines/bm25.py --train-file-path=baselines/v1/train.tsv --dev-file-path=baselines/v1/dev.tsv
-# --vclaims-dir-path=baselines/politifact-vclaims --iclaims-file-path=baselines/v1/iclaims.queries --subtask=2b
-# --lang=english
+# python baselines/classifier.py --train-file-path=data/subtask-2b--english/v1/train.tsv --dev-file-path=data/subtask-2b--english/v1/dev.tsv --vclaims-dir-path=data/subtask-2b--english/politifact-vclaims --iclaims-file-path=data/subtask-2b--english/v1/iclaims.queries --subtask=2b --lang=english --iclaims-embeddings-path=embeddings/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/vclaims_embeddings.npy --dev-embeddings-path=embeddings/dclaims_embeddings.npy --train-embeddings-path=embeddings/tclaims_embeddings.npy
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--train-file-path", "-t", required=True, type=str,

@@ -65,7 +65,7 @@ def load_claim_files(claim_ids):
         claim_filename = DATA_DIR + id + ".json"
         with open(claim_filename) as claim_json:
             claim = json.load(claim_json)
-            loaded_claims.append(claim['vclaim'])
+            loaded_claims.append(claim['text'])
 
     return loaded_claims
 
@@ -199,7 +199,6 @@ def get_labels(vclaim_ids, verified_claims):
     labels = np.zeros((len(vclaim_ids), 19249))
 
     for i, vclaim_id in enumerate(vclaim_ids):
-        print(vclaim_id, str(int(vclaim_id[-5:])), str(i))
         labels[i][int(vclaim_id[-5:])] = 1
     return labels
 

@@ -17,7 +17,7 @@ from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras.models import Sequential
 from tqdm import tqdm
 
-from baselines.sbert_2a import separate_words, remove_new_lines
+from sbert_2a import separate_words, remove_new_lines
 
 sys.path.append('.')
 
@@ -87,7 +87,7 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         tclaim_ids = tclaims.iclaim_id.tolist()
         for iclaim_id in tclaim_ids:
             iclaim = all_iclaims.iclaim[all_iclaims.iclaim_id == iclaim_id].iloc[0]
-            train_encodings.append(sbert.encode(iclaim))
+            train_encodings.append(sbert.encode(preprocess_iclaim(iclaim)))
 
         if args.store_embeddings:
             np.save('embeddings/tclaims_embeddings.npy', np.array(train_encodings))
@@ -99,7 +99,7 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         logging.info("All iclaims embeddings loaded successfully.")
     else:
         # Compute the encodings for all iclaims
-        iclaims_encodings = [sbert.encode(preprocess_iclaim(iclaim)) for iclaim in iclaims]
+        iclaims_encodings = [sbert.encode(preprocess_iclaim(iclaim[1])) for iclaim in iclaims]
         if args.store_embeddings:
             np.save('embeddings/iclaims_embeddings.npy', np.array(iclaims_encodings))
         logging.info("All iclaims encoded successfully.")
@@ -110,7 +110,7 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         logging.info("All vclaims embeddings loaded successfully.")
     else:
         # Compute the encodings for all vclaims in all texts
-        texts = [preprocess_vclaim(vclaim['text']) for vclaim in vclaims_list]
+        texts = [preprocess_vclaim(vclaim) for vclaim in vclaims_list]
         vclaim_encodings = [sbert.encode(sent_tokenize(text)) for text in texts]
         if args.store_embeddings:
             np.save('embeddings/vclaims_embeddings.npy', np.array(vclaim_encodings))
@@ -126,7 +126,7 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         dclaim_ids = dclaims.iclaim_id.tolist()
         for iclaim_id in dclaim_ids:
             iclaim = all_iclaims.iclaim[all_iclaims.iclaim_id == iclaim_id].iloc[0]
-            dclaim_encodings.append(sbert.encode(iclaim))
+            dclaim_encodings.append(sbert.encode(preprocess_iclaim(iclaim)))
 
         if args.store_embeddings:
             np.save('embeddings/dclaims_embeddings.npy', np.array(dclaim_encodings))
@@ -172,7 +172,7 @@ def get_sbert_body_scores(input_embeddings, vclaim_embeddings, num_sentences):
 
 
 def preprocess_iclaim(iclaim):
-    return separate_words(iclaim[1])
+    return separate_words(iclaim)
 
 
 def preprocess_vclaim(vclaim):

@@ -39,6 +39,9 @@ def delete_link(text):
 def separate_words(text):
     return re.sub(' +', ' ', re.sub('([A-Z][a-z]+)', r' \1', re.sub('(#|@)([A-Z]+)', r'\2', text)))
 
+def remove_new_lines(text):
+    return text.replace("\n", "")
+
 def remove_last_punctuation(text):
     punctuation = '!"#$%&\'()*+, -./:;<=>?@[\]^_`{|}~”'
     index = len(text) - 1

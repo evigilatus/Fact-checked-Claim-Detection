@@ -8,7 +8,6 @@ from glob import glob
 from os.path import join, dirname, basename, exists
 from sklearn.metrics.pairwise import cosine_similarity
 
-
 import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
@@ -17,6 +16,8 @@ import tensorflow as tf
 from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras.models import Sequential
 from tqdm import tqdm
+
+from baselines.sbert_2a import separate_words, remove_new_lines
 
 sys.path.append('.')
 
@@ -33,10 +34,10 @@ num_sentences = 4
 def load_dataset(ids_fp, pairs_fp):
     INPUT_COLUMNS = ["sentence_id", "sentence"]
     dataset = pd.read_csv(ids_fp,
-                            sep='\t',
-                            header=None,
-                            names=INPUT_COLUMNS,
-                            index_col=False)
+                          sep='\t',
+                          header=None,
+                          names=INPUT_COLUMNS,
+                          index_col=False)
     dataset['vclaim_ids'] = [[] for _ in range(len(dataset))]
     with open(pairs_fp) as f:
         for line in f.readlines():
@@ -45,6 +46,7 @@ def load_dataset(ids_fp, pairs_fp):
             row = dataset[dataset.sentence_id == sentence_id].iloc[0]
             row.vclaim_ids.append(vclaim_id)
     return dataset
+
 
 def load_vclaims(dir):
     vclaims_fp = glob(f'{dir}/*.json')
@@ -57,6 +59,7 @@ def load_vclaims(dir):
         vclaims[vclaim['vclaim_id']] = vclaim
         vclaims_list.append(vclaim)
     return vclaims, vclaims_list
+
 
 def load_claim_files(claim_ids):
     # For each title, find the corresponding json file
@@ -83,11 +86,11 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         train_encodings = []
         tclaim_ids = tclaims.iclaim_id.tolist()
         for iclaim_id in tclaim_ids:
-          iclaim = all_iclaims.iclaim[all_iclaims.iclaim_id == iclaim_id].iloc[0]
-          train_encodings.append(sbert.encode(iclaim))
-        
+            iclaim = all_iclaims.iclaim[all_iclaims.iclaim_id == iclaim_id].iloc[0]
+            train_encodings.append(sbert.encode(iclaim))
+
         if args.store_embeddings:
-          np.save('embeddings/tclaims_embeddings.npy', np.array(train_encodings))
+            np.save('embeddings/tclaims_embeddings.npy', np.array(train_encodings))
         logging.info("All train claims encoded successfully.")
 
     if args.iclaims_embeddings_path:
@@ -96,7 +99,7 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         logging.info("All iclaims embeddings loaded successfully.")
     else:
         # Compute the encodings for all iclaims
-        iclaims_encodings = [sbert.encode(iclaim) for iclaim in iclaims]
+        iclaims_encodings = [sbert.encode(preprocess_iclaim(iclaim)) for iclaim in iclaims]
         if args.store_embeddings:
             np.save('embeddings/iclaims_embeddings.npy', np.array(iclaims_encodings))
         logging.info("All iclaims encoded successfully.")
@@ -107,7 +110,7 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         logging.info("All vclaims embeddings loaded successfully.")
     else:
         # Compute the encodings for all vclaims in all texts
-        texts = [vclaim['text'] for vclaim in vclaims_list]
+        texts = [preprocess_vclaim(vclaim['text']) for vclaim in vclaims_list]
         vclaim_encodings = [sbert.encode(sent_tokenize(text)) for text in texts]
         if args.store_embeddings:
             np.save('embeddings/vclaims_embeddings.npy', np.array(vclaim_encodings))
@@ -122,8 +125,8 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         dclaim_encodings = []
         dclaim_ids = dclaims.iclaim_id.tolist()
         for iclaim_id in dclaim_ids:
-          iclaim = all_iclaims.iclaim[all_iclaims.iclaim_id == iclaim_id].iloc[0]
-          dclaim_encodings.append(sbert.encode(iclaim))
+            iclaim = all_iclaims.iclaim[all_iclaims.iclaim_id == iclaim_id].iloc[0]
+            dclaim_encodings.append(sbert.encode(iclaim))
 
         if args.store_embeddings:
             np.save('embeddings/dclaims_embeddings.npy', np.array(dclaim_encodings))
@@ -143,28 +146,37 @@ def format_scores(scores):
 def get_sbert_body_scores(input_embeddings, vclaim_embeddings, num_sentences):
     sbert_vclaims_text_scores = np.zeros((len(input_embeddings), num_sentences, len(vclaim_embeddings)))
 
-    #for i, input_embedding in enumerate(input_embeddings):
+    # for i, input_embedding in enumerate(input_embeddings):
     #    print(i)
     for vclaim_id, sbert_embeddings in enumerate(tqdm(vclaim_embeddings)):
-      if not len(sbert_embeddings):
-          continue
+        if not len(sbert_embeddings):
+            continue
 
-      vclaim_text_score = cosine_similarity(input_embeddings, sbert_embeddings)#util.semantic_search(input_embedding, sbert_embeddings, top_k = num_sentences)
-      scores = []
+        vclaim_text_score = cosine_similarity(input_embeddings,
+                                              sbert_embeddings)  # util.semantic_search(input_embedding, sbert_embeddings, top_k = num_sentences)
+        scores = []
 
-      # for vclaim_text_queries_score in vclaim_text_queries_scores:
-      #   for vclaim_text_score in vclaim_text_queries_score:
-      #     scores.append(vclaim_text_score['score'])
+        # for vclaim_text_queries_score in vclaim_text_queries_scores:
+        #   for vclaim_text_score in vclaim_text_queries_score:
+        #     scores.append(vclaim_text_score['score'])
 
-      vclaim_text_score = np.sort(vclaim_text_score)
-      n = min(num_sentences, len(sbert_embeddings))
-      sbert_vclaims_text_scores[:, :n, vclaim_id] = vclaim_text_score[:, -n:]
-        
-      #n = min(num_sentences, len(scores))
-        
+        vclaim_text_score = np.sort(vclaim_text_score)
+        n = min(num_sentences, len(sbert_embeddings))
+        sbert_vclaims_text_scores[:, :n, vclaim_id] = vclaim_text_score[:, -n:]
+
+        # n = min(num_sentences, len(scores))
+
     print(sbert_vclaims_text_scores.shape)
 
     return sbert_vclaims_text_scores.transpose((0, 2, 1))
+
+
+def preprocess_iclaim(iclaim):
+    return separate_words(iclaim[1])
+
+
+def preprocess_vclaim(vclaim):
+    return separate_words(remove_new_lines(vclaim['title'] + " " + vclaim['text']))
 
 
 def create_classifier(train_labels, train_embeddings, vclaim_embeddings):
@@ -184,8 +196,8 @@ def create_classifier(train_labels, train_embeddings, vclaim_embeddings):
 
     # Scaling by total/2 helps keep the loss to a similar magnitude.
     # The sum of the weights of all examples stays the same.
-    weight_for_0 = (1 / neg)*(total)/2.0 
-    weight_for_1 = (1 / pos)*(total)/2.0
+    weight_for_0 = (1 / neg) * (total) / 2.0
+    weight_for_1 = (1 / pos) * (total) / 2.0
 
     class_weight = {0: weight_for_0, 1: weight_for_1}
 
@@ -200,16 +212,32 @@ def create_classifier(train_labels, train_embeddings, vclaim_embeddings):
 
     model.fit(train_embeddings.reshape((-1, num_sentences)),
               train_labels.reshape((-1, 1)),
-              epochs=15,
-              batch_size=2048, 
+              epochs=25,
+              batch_size=2048,
               class_weight=class_weight)
 
     return model
 
 
-def predict(model, iclaim_embeddings, vclaim_embeddings):
+def predict(model, iclaim_embeddings, vclaim_embeddings, iclaims, vclaims_list):
     test_scores = get_sbert_body_scores(iclaim_embeddings, vclaim_embeddings, num_sentences)
-    return model.predict(test_scores.reshape((-1, num_sentences)))
+    predictions = model.predict(test_scores.reshape((-1, num_sentences)))
+
+    return map_predictions(predictions, iclaims, vclaims_list)
+
+
+def map_predictions(predictions, iclaims, vclaims_list):
+    splitted_predictions = predictions.reshape(140, 19250)
+    all_scores = {}
+    for i, iclaim in enumerate(iclaims):
+        iclaim_score = {}
+        results = splitted_predictions[i]
+        for j, result in enumerate(results):
+            vclaim_id = vclaims_list[j]['vclaim_id']
+            iclaim_score[vclaim_id] = result
+        all_scores[iclaim[0]] = sorted(list(iclaim_score.items()), key=lambda x: x[1], reverse=True)
+
+    return all_scores
 
 
 def get_labels(vclaim_ids, verified_claims):
@@ -236,16 +264,18 @@ def run_baselines(args):
     dev_dataset = pd.read_csv(args.dev_file_path, sep='\t', names=['iclaim_id', '0', 'vclaim_id', 'relevance'])
     train_dataset = pd.read_csv(args.train_file_path, sep='\t', names=['iclaim_id', '0', 'vclaim_id', 'relevance'])
 
-    train_encodings, iclaims_encodings, vclaim_encodings, dev_encodings = get_encodings(args, all_iclaims, train_dataset, iclaims, vclaims_list, dev_dataset)
+    train_encodings, iclaims_encodings, vclaim_encodings, dev_encodings = get_encodings(args, all_iclaims,
+                                                                                        train_dataset, iclaims,
+                                                                                        vclaims_list, dev_dataset)
 
     # Classify S-BERT scores
     train_labels = get_labels(train_dataset.vclaim_id, vclaims)
     test_labels = get_labels(dev_dataset.vclaim_id, vclaims)
 
-    #train_scores = get_sbert_body_scores(train_encodings, vclaim_encodings, num_sentences)
+    # train_scores = get_sbert_body_scores(train_encodings, vclaim_encodings, num_sentences)
 
     classifier = create_classifier(train_labels, train_encodings, vclaim_encodings)
-    predictions = predict(classifier, dev_encodings, vclaim_encodings)
+    predictions = predict(classifier, dev_encodings, vclaim_encodings, iclaims, vclaims_list)
 
     # options are title, vclaim, text
     # scores = get_scores(iclaims, vclaims_list, iclaims_encodings, vclaim_encodings)

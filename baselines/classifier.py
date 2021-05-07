@@ -141,14 +141,12 @@ def get_sbert_body_scores(input_embeddings, vclaim_embeddings, num_sentences):
     for vclaim_id, sbert_embeddings in enumerate(tqdm(vclaim_embeddings)):
         if not len(sbert_embeddings):
             continue
-        print(vclaim_id)
         n = min(num_sentences, len(sbert_embeddings))
-        vclaim_text_scores = util.semantic_search(input_embeddings, sbert_embeddings, top_k=num_sentences)
-        vclaim_text_scores = vclaim_text_scores[vclaim_id]
-        vclaim_text_scores = [vclaim_text_score['score'] for vclaim_text_score in vclaim_text_scores]
-        sbert_vclaims_text_scores[:, :n, vclaim_id] = vclaim_text_scores[:n]
-
-    print(sbert_vclaims_text_scores.shape)
+        vclaim_text_queries_scores = util.semantic_search(input_embeddings, sbert_embeddings, top_k=n)
+        vclaim_text_queries_scores = [
+            [vclaim_text_score['score'] for vclaim_text_score in vclaim_text_query_scores] for vclaim_text_query_scores in vclaim_text_queries_scores
+        ]
+        sbert_vclaims_text_scores[:, :n, vclaim_id] = vclaim_text_queries_scores
 
     return sbert_vclaims_text_scores.transpose((0, 2, 1))
 

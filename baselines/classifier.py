@@ -143,23 +143,25 @@ def format_scores(scores):
 def get_sbert_body_scores(input_embeddings, vclaim_embeddings, num_sentences):
     sbert_vclaims_text_scores = np.zeros((len(input_embeddings), num_sentences, len(vclaim_embeddings)))
 
-    for i, input_embedding in enumerate(input_embeddings):
-        print(i)
-        for vclaim_id, sbert_embeddings in enumerate(vclaim_embeddings):
-          if not len(sbert_embeddings):
-              continue
+    #for i, input_embedding in enumerate(input_embeddings):
+    #    print(i)
+    for vclaim_id, sbert_embeddings in enumerate(tqdm(vclaim_embeddings)):
+      if not len(sbert_embeddings):
+          continue
 
-          vclaim_text_queries_scores = util.semantic_search(input_embedding, sbert_embeddings, top_k = num_sentences)
-          scores = []
+      vclaim_text_score = cosine_similarity(input_embeddings, sbert_embeddings)#util.semantic_search(input_embedding, sbert_embeddings, top_k = num_sentences)
+      scores = []
 
-          for vclaim_text_queries_score in vclaim_text_queries_scores:
-            for vclaim_text_score in vclaim_text_queries_score:
-              scores.append(vclaim_text_score['score'])
-            
-          n = min(num_sentences, len(scores))
-            
-          sbert_vclaims_text_scores[i, :n, vclaim_id] = scores
+      # for vclaim_text_queries_score in vclaim_text_queries_scores:
+      #   for vclaim_text_score in vclaim_text_queries_score:
+      #     scores.append(vclaim_text_score['score'])
 
+      vclaim_text_score = np.sort(vclaim_text_score)
+      n = min(num_sentences, len(sbert_embeddings))
+      sbert_vclaims_text_scores[:, :n, vclaim_id] = vclaim_text_score[:, -n:]
+        
+      #n = min(num_sentences, len(scores))
+        
     print(sbert_vclaims_text_scores.shape)
 
     return sbert_vclaims_text_scores.transpose((0, 2, 1))

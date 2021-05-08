@@ -14,7 +14,7 @@ from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer, util
 import tensorflow as tf
 from tensorflow.python.keras.layers import Dense
-from tensorflow.python.keras.models import Sequential
+from tensorflow.python.keras.models import Sequential, model_from_json
 from tqdm import tqdm
 
 from sbert_2a import separate_words, remove_new_lines
@@ -274,7 +274,24 @@ def run_baselines(args):
 
     # train_scores = get_sbert_body_scores(train_encodings, vclaim_encodings, num_sentences)
 
-    classifier = create_classifier(train_labels, train_encodings, vclaim_encodings)
+    if args.model_path:
+        json_file = open(args.model_path, 'r')
+        loaded_model_json = json_file.read()
+        json_file.close()
+        classifier = model_from_json(loaded_model_json)
+        classifier.load_weights(args.weights_path)
+        logging.info(f"Loaded model from {args.weights_path}")
+    else:
+        classifier = create_classifier(train_labels, train_encodings, vclaim_encodings)
+        if args.store_model:
+            model_json = classifier.to_json()
+            # TODO: Fix this so that it works without previously created model directory
+            with open("model/classifier.json", "w") as json_file:
+                json_file.write(model_json)
+            # Serialize weights to HDF5
+            classifier.save_weights("model/classifier.h5")
+            logging.info("Saved model to disk")
+
     predictions = predict(classifier, dev_encodings, vclaim_encodings, iclaims, vclaims_list)
 
     # options are title, vclaim, text
@@ -323,7 +340,13 @@ if __name__ == '__main__':
     parser.add_argument("--dev-embeddings-path", "-de", required=False, type=str,
                         help="The absolute path to embeddings to be used for dev")
     parser.add_argument("--store-embeddings", "-se", required=False, type=bool, default=False,
-                        help="The absolute path to embeddings to be used for vclaims")
+                        help="If  true, store all computed embeddings")
+    parser.add_argument("--store-model", "-sm", required=False, type=bool, default=False,
+                        help="If true, store the model weights. Please create a model directory first.")
+    parser.add_argument("--model-path", "-mp", required=False, type=str,
+                        help="The absolute path to the model")
+    parser.add_argument("--weights-path", "-wp", required=False, type=str,
+                        help="The absolute path to the model weights")
 
     args = parser.parse_args()
     run_baselines(args)

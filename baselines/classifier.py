@@ -55,12 +55,16 @@ def load_vclaims(dir):
     vclaims_fp.sort()
     vclaims = {}
     vclaims_list = []
+    index = 0
     for vclaim_fp in vclaims_fp:
         with open(vclaim_fp) as f:
             vclaim = json.load(f)
+        vclaim['file_id'] = index
         vclaims[vclaim['vclaim_id']] = vclaim
         vclaims_list.append(vclaim)
+        index = index + 1
     return vclaims, vclaims_list
+
 
 
 def load_claim_files(claim_ids):
@@ -246,7 +250,8 @@ def get_labels(vclaim_ids, verified_claims):
     labels = np.zeros((len(vclaim_ids), len(verified_claims)))
 
     for i, vclaim_id in enumerate(vclaim_ids):
-        labels[i][int(vclaim_id[-5:])] = 1
+        #verified_claims[vclaim_id]['file_id']
+        labels[i][verified_claims[vclaim_id]['file_id']] = 1
     return labels
 
 

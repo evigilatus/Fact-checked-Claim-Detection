@@ -70,21 +70,31 @@ def preprocess_vclaims(vclaim):
     return remove_last_punctuation(separate_words(vclaim['title'] + " " + vclaim['subtitle'] + " " +  vclaim['vclaim'])) + ' ' +  vclaim['date']
 
 
-def get_translated_encodings(args, all_translated_iclaims, tclaims):
+def get_translated_encodings(args, all_translated_iclaims, tclaims, vclaims_list):
     # Compute the encodings for the train data
     if args.translated_train_embeddings_path:
-        translated_train_encodings = np.load(args.train_embeddings_path, allow_pickle=True)
+        translated_train_encodings = np.load(args.translated_train_embeddings_path, allow_pickle=True)
         logging.info("All translated train embeddings loaded successfully.")
     else:
         translated_train_encodings = []
         tclaim_ids = tclaims.iclaim_id.tolist()
         for iclaim_id in tclaim_ids:
             iclaim = all_translated_iclaims.iclaim[all_translated_iclaims.iclaim_id == iclaim_id].iloc[0]
-            print(iclaim)
             translated_train_encodings.append(sbert.encode(preprocess_iclaims(iclaim)))
         np.save('embeddings/2a/translated_claims_embeddings.npy', np.array(translated_train_encodings))
         logging.info("All Translated train claims encoded successfully.")
-    return translated_train_encodings
+
+    if args.translated_vclaims_embeddings_path:
+        # Load encodings from path
+        translated_vclaim_encodings = np.load(args.translated_vclaims_embeddings_path, allow_pickle=True)
+        logging.info("All translated vclaims embeddings loaded successfully.")
+    else:
+        # Compute the encodings for all vclaims in all texts
+        texts = [preprocess_vclaims(vclaim) for vclaim in vclaims_list]
+        translated_vclaim_encodings = [sbert.encode(sent_tokenize(text)) for text in texts]
+        np.save('embeddings/2a/translated_vclaims_embeddings.npy', np.array(translated_vclaim_encodings))
+        logging.info("All translated vclaims encoded successfully.")
+    return translated_train_encodings, translated_vclaim_encodings
 
 def get_encodings(args, all_iclaims, tclaims, dclaims, iclaims, vclaims_list):
     if args.train_embeddings_path:
@@ -152,6 +162,7 @@ def get_sbert_body_scores(input_embeddings, vclaim_embeddings, num_sentences):
     for vclaim_id, sbert_embeddings in enumerate(tqdm(vclaim_embeddings)):
       if not len(sbert_embeddings):
           continue
+      # print(input_embeddings, sbert_embeddings)
       vclaim_text_score = cosine_similarity(input_embeddings, sbert_embeddings)
       vclaim_text_score = np.sort(vclaim_text_score)
       n = min(num_sentences, len(sbert_embeddings))
@@ -301,10 +312,12 @@ def run_baselines(args):
         classifier = model_from_json(loaded_model_json)
         classifier.load_weights(args.weights_path)
         if args.retrain_model:
+            # TODO: ITS HARDCODED
             all_translated_iclaims = pd.read_csv('data/subtask-2a--english/processed-tweets-train-dev.tr.tsv', sep='\t',
                                                  names=['iclaim_id', 'iclaim'])
-            translated_train_encodings = get_translated_encodings(args, all_translated_iclaims, train_dataset)
-            classifier = retrain_classifier(classifier, train_labels, translated_train_encodings, vclaim_encodings)
+            translated_vclaims, translated_vclaims_list = load_vclaims(args.translated_vclaims_dir_path)
+            translated_train_encodings, translated_vclaim_encodings = get_translated_encodings(args, all_translated_iclaims, train_dataset, translated_vclaims_list)
+            classifier = retrain_classifier(classifier, train_labels, translated_train_encodings, translated_vclaim_encodings)
             logging.info(f"Loaded model from {args.weights_path}")
             model_json = classifier.to_json()
             with open("model/2a/translated_similarity/classifier.json", "w") as json_file:
@@ -339,7 +352,7 @@ def run_baselines(args):
     logging.info(f'All P scores on threshold from [1, 3, 5, 10, 20, 50, 1000]. {precisions}')
 
 
-# python baselines/sbert_2a_retrain_translated.py --train-file-path=data/subtask-2a--english/qrels-train.tsv --dev-file-path=data/subtask-2a--english/qrels-dev.tsv --vclaims-dir-path=data/subtask-2a--english/vclaims --iclaims-file-path=data/subtask-2a--english/tweets-train-dev.tsv --subtask=2a --lang=english --iclaims-embeddings-path=embeddings/2a/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2a/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2a/dclaims_embeddings.npy --train-embeddings-path=embeddings/2a/tclaims_embeddings.npy --model-path=model/2a/cosine_similarity/classifier.json --weights-path=model/2a/cosine_similarity/classifier.h5 --translated-train-embeddings-path=embeddings/2a/translated_claims_embeddings.npy --retrain-model=true
+# python baselines/sbert_2a_retrain_translated.py --train-file-path=data/subtask-2a--english/qrels-train.tsv --dev-file-path=data/subtask-2a--english/qrels-dev.tsv --translated-vclaims-dir-path=data/subtask-2a--english/translated_vclaims --vclaims-dir-path=data/subtask-2a--english/vclaims --iclaims-file-path=data/subtask-2a--english/tweets-train-dev.tsv --subtask=2a --lang=english --iclaims-embeddings-path=embeddings/2a/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2a/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2a/dclaims_embeddings.npy --train-embeddings-path=embeddings/2a/tclaims_embeddings.npy --model-path=model/2a/cosine_similarity/classifier.json --weights-path=model/2a/cosine_similarity/classifier.h5 --translated-train-embeddings-path=embeddings/2a/translated_claims_embeddings.npy --retrain-model=true
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -349,6 +362,8 @@ if __name__ == '__main__':
                         help="The absolute path to the dev data")
     parser.add_argument("--vclaims-dir-path", "-v", required=True, type=str,
                         help="The absolute path to the directory with the verified claim documents")
+    parser.add_argument("--translated-vclaims-dir-path", "-tv", required=True, type=str,
+                        help="The absolute path to the directory with the translated verified claim documents")
     parser.add_argument("--iclaims-file-path", "-i", required=True,
                         help="TSV file with iclaims. Format: iclaim_id iclaim_content")
     parser.add_argument("--keys", "-k", default=['vclaim', 'title'],
@@ -365,6 +380,9 @@ if __name__ == '__main__':
                         help="The absolute path to embeddings to be used for iclaims")
     parser.add_argument("--vclaims-embeddings-path", "-ve", required=False, type=str,
                         help="The absolute path to embeddings to be used for vclaims")
+    parser.add_argument("--translated-vclaims-embeddings-path", "-tve", required=False, type=str,
+                        help="The absolute path to translated embeddings to be used for vclaims")
+    # translated_vclaims_dir_path
     parser.add_argument("--train-embeddings-path", "-te", required=False, type=str,
                         help="The absolute path to embeddings to be used for train")
     parser.add_argument("--translated-train-embeddings-path", "-tte", required=False, type=str,

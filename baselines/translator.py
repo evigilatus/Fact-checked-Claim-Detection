@@ -120,7 +120,7 @@ def translate_processed_tweets(en_ar, ar_en):
 if __name__ == "__main__":
     en_ar = Translator(*Translator.EN_AR)
     ar_en = Translator(*Translator.AR_EN)
-    dir = os.path.join(os.path.basename(__file__), "..", "data", "subtask-2b--english", "politifact-vclaims")
+    dir = os.path.join(os.path.dirname(__file__), "..", "data", "subtask-2b--english", "politifact-vclaims")
     print(dir)
     file_names = glob(dir + "/*.json")
     for file_name in sorted(file_names):

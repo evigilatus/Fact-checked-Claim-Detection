@@ -59,6 +59,9 @@ def remove_last_punctuation(text):
     while text[index] in punctuation:
         index = index - 1
     return text[:index + 1]
+    
+def remove_new_lines(text):
+    return text.replace("\n", "")
 
 def preprocess_iclaims(iclaim):
     return separate_words(delete_link(iclaim))

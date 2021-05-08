@@ -50,6 +50,8 @@ def load_dataset(ids_fp, pairs_fp):
 
 def load_vclaims(dir):
     vclaims_fp = glob(f'{dir}/*.json')
+    translated_dir = dir.replace("politifact", "translated")
+    vclaims_fp.append(glob(f'{translated_dir}/*.json'))
     vclaims_fp.sort()
     vclaims = {}
     vclaims_list = []

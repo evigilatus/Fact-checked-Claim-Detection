@@ -289,19 +289,19 @@ def run_baselines(args):
         json_file = open(args.model_path, 'r')
         loaded_model_json = json_file.read()
         json_file.close()
-        model = model_from_json(loaded_model_json)
-        model.load_weights(args.weights_path)
+        classifier = model_from_json(loaded_model_json)
+        classifier.load_weights(args.weights_path)
         logging.info(f"Loaded model from {args.weights_path}")
-    # else:
-    classifier = create_classifier(train_labels, train_encodings, vclaim_encodings, model=model)
-    if args.store_model:
-        model_json = classifier.to_json()
-        # TODO: Fix this so that it works without previously created model directory
-        with open("model/classifier.json", "w") as json_file:
-            json_file.write(model_json)
-        # Serialize weights to HDF5
-        classifier.save_weights("model/classifier.h5")
-        logging.info("Saved model to disk")
+    else:
+        classifier = create_classifier(train_labels, train_encodings, vclaim_encodings, model=model)
+        if args.store_model:
+            model_json = classifier.to_json()
+            # TODO: Fix this so that it works without previously created model directory
+            with open("model/classifier.json", "w") as json_file:
+                json_file.write(model_json)
+            # Serialize weights to HDF5
+            classifier.save_weights("model/classifier.h5")
+            logging.info("Saved model to disk")
 
     predictions = predict(classifier, dev_encodings, vclaim_encodings, iclaims, vclaims_list)
 

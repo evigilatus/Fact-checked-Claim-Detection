@@ -193,25 +193,23 @@ def create_classifier(train_labels, train_embeddings, vclaim_embeddings, model=N
         model.add(Dense(10, activation='relu'))
         model.add(Dense(1, activation='sigmoid'))
 
-        # compile the keras model
-        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    # compile the keras model
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-        # Compute class weights
-        total = len(train_labels.reshape((-1, 1)))
-        pos = train_labels.reshape((-1)).sum()
-        neg = total - pos
+    # Compute class weights
+    total = len(train_labels.reshape((-1, 1)))
+    pos = train_labels.reshape((-1)).sum()
+    neg = total - pos
 
-        # Scaling by total/2 helps keep the loss to a similar magnitude.
-        # The sum of the weights of all examples stays the same.
-        weight_for_0 = (1 / neg) * (total) / 2.0
-        weight_for_1 = (1 / pos) * (total) / 2.0
+    # Scaling by total/2 helps keep the loss to a similar magnitude.
+    # The sum of the weights of all examples stays the same.
+    weight_for_0 = (1 / neg) * (total) / 2.0
+    weight_for_1 = (1 / pos) * (total) / 2.0
 
-        class_weight = {0: weight_for_0, 1: weight_for_1}
+    class_weight = {0: weight_for_0, 1: weight_for_1}
 
-        print('Weight for class 0: {:.2f}'.format(weight_for_0))
-        print('Weight for class 1: {:.2f}'.format(weight_for_1))
-    else:
-        class_weight = model.weights
+    print('Weight for class 0: {:.2f}'.format(weight_for_0))
+    print('Weight for class 1: {:.2f}'.format(weight_for_1))
 
     # Obtain the embeddings and scores to train the MLP (top-4 sentences per each article)
     train_embeddings = get_sbert_body_scores(train_embeddings, vclaim_embeddings, num_sentences)

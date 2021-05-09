@@ -50,8 +50,8 @@ def load_dataset(ids_fp, pairs_fp):
 
 def load_vclaims(dir):
     vclaims_fp = glob(f'{dir}/*.json')
-    translated_dir = dir.replace("politifact", "translated")
-    vclaims_fp.extend(glob(f'{translated_dir}/*.json'))
+    #translated_dir = dir.replace("politifact", "translated")
+    #vclaims_fp.extend(glob(f'{translated_dir}/*.json'))
     vclaims_fp.sort()
     vclaims = {}
     vclaims_list = []
@@ -185,30 +185,33 @@ def preprocess_vclaim(vclaim):
     return separate_words(remove_new_lines(vclaim['title'] + " " + vclaim['text']))
 
 
-def create_classifier(train_labels, train_embeddings, vclaim_embeddings):
-    # Define the model
-    model = Sequential()
-    model.add(Dense(20, input_dim=num_sentences, activation='relu'))
-    model.add(Dense(10, activation='relu'))
-    model.add(Dense(1, activation='sigmoid'))
+def create_classifier(train_labels, train_embeddings, vclaim_embeddings, model=None):
+    if not model:
+        # Define the model
+        model = Sequential()
+        model.add(Dense(20, input_dim=num_sentences, activation='relu'))
+        model.add(Dense(10, activation='relu'))
+        model.add(Dense(1, activation='sigmoid'))
 
-    # compile the keras model
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        # compile the keras model
+        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    # Compute class weights
-    total = len(train_labels.reshape((-1, 1)))
-    pos = train_labels.reshape((-1)).sum()
-    neg = total - pos
+        # Compute class weights
+        total = len(train_labels.reshape((-1, 1)))
+        pos = train_labels.reshape((-1)).sum()
+        neg = total - pos
 
-    # Scaling by total/2 helps keep the loss to a similar magnitude.
-    # The sum of the weights of all examples stays the same.
-    weight_for_0 = (1 / neg) * (total) / 2.0
-    weight_for_1 = (1 / pos) * (total) / 2.0
+        # Scaling by total/2 helps keep the loss to a similar magnitude.
+        # The sum of the weights of all examples stays the same.
+        weight_for_0 = (1 / neg) * (total) / 2.0
+        weight_for_1 = (1 / pos) * (total) / 2.0
 
-    class_weight = {0: weight_for_0, 1: weight_for_1}
+        class_weight = {0: weight_for_0, 1: weight_for_1}
 
-    print('Weight for class 0: {:.2f}'.format(weight_for_0))
-    print('Weight for class 1: {:.2f}'.format(weight_for_1))
+        print('Weight for class 0: {:.2f}'.format(weight_for_0))
+        print('Weight for class 1: {:.2f}'.format(weight_for_1))
+    else:
+        class_weight = model.weights
 
     # Obtain the embeddings and scores to train the MLP (top-4 sentences per each article)
     train_embeddings = get_sbert_body_scores(train_embeddings, vclaim_embeddings, num_sentences)
@@ -248,6 +251,7 @@ def map_predictions(predictions, iclaims, vclaims_list):
 
 
 def get_labels(vclaim_ids, verified_claims):
+    print(len(vclaim_ids), len(verified_claims))
     labels = np.zeros((len(vclaim_ids), len(verified_claims)))
 
     for i, vclaim_id in enumerate(vclaim_ids):
@@ -282,23 +286,24 @@ def run_baselines(args):
 
     # train_scores = get_sbert_body_scores(train_encodings, vclaim_encodings, num_sentences)
 
+    model = None
     if args.model_path:
         json_file = open(args.model_path, 'r')
         loaded_model_json = json_file.read()
         json_file.close()
-        classifier = model_from_json(loaded_model_json)
-        classifier.load_weights(args.weights_path)
+        model = model_from_json(loaded_model_json)
+        model.load_weights(args.weights_path)
         logging.info(f"Loaded model from {args.weights_path}")
-    else:
-        classifier = create_classifier(train_labels, train_encodings, vclaim_encodings)
-        if args.store_model:
-            model_json = classifier.to_json()
-            # TODO: Fix this so that it works without previously created model directory
-            with open("model/classifier.json", "w") as json_file:
-                json_file.write(model_json)
-            # Serialize weights to HDF5
-            classifier.save_weights("model/classifier.h5")
-            logging.info("Saved model to disk")
+    # else:
+    classifier = create_classifier(train_labels, train_encodings, vclaim_encodings, model=model)
+    if args.store_model:
+        model_json = classifier.to_json()
+        # TODO: Fix this so that it works without previously created model directory
+        with open("model/classifier.json", "w") as json_file:
+            json_file.write(model_json)
+        # Serialize weights to HDF5
+        classifier.save_weights("model/classifier.h5")
+        logging.info("Saved model to disk")
 
     predictions = predict(classifier, dev_encodings, vclaim_encodings, iclaims, vclaims_list)
 

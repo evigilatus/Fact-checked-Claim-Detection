@@ -61,7 +61,7 @@ class Translator:
 
 
 def back_translate_tsv_tweets():
-    dir = os.path.join("..", "data", "subtask-2a--english")
+    dir = os.path.join("../..", "data", "subtask-2a--english")
     file_name = "processed-tweets-train-dev.tsv"
     out_file = file_name.replace(".tsv", ".tr.tsv")
 
@@ -79,7 +79,7 @@ def back_translate_tsv_tweets():
 
 
 def back_translate_tweet_jsons():
-    dir = os.path.join("..", "data", "subtask-2a--english", "vclaims")
+    dir = os.path.join("../..", "data", "subtask-2a--english", "vclaims")
     file_names = glob(dir + "/*.json")
     for file_name in sorted(file_names):
         out_name = file_name.replace(".json", "_tr.json")
@@ -101,7 +101,7 @@ def back_translate_tweet_jsons():
 
 
 def translate_processed_tweets(en_ar, ar_en):
-    dir = os.path.join(os.path.dirname(__file__), "..", "data", "subtask-2a--english", "test_data")
+    dir = os.path.join(os.path.dirname(__file__), "../..", "data", "subtask-2a--english", "test_data")
     print(dir)
     input_file_name = os.path.join(dir, "processed-tweets-test.tsv")
     output_file_name = input_file_name.replace(".tsv", "_tr.tsv")
@@ -120,7 +120,7 @@ def translate_processed_tweets(en_ar, ar_en):
 if __name__ == "__main__":
     en_ar = Translator(*Translator.EN_AR)
     ar_en = Translator(*Translator.AR_EN)
-    dir = os.path.join(os.path.dirname(__file__), "..", "data", "subtask-2b--english", "politifact-vclaims")
+    dir = os.path.join(os.path.dirname(__file__), "../..", "data", "subtask-2b--english", "politifact-vclaims")
     print(dir)
     file_names = glob(dir + "/*.json")
     for file_name in sorted(file_names):

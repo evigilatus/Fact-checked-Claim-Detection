@@ -51,7 +51,7 @@ def load_dataset(ids_fp, pairs_fp):
 def load_vclaims(dir):
     vclaims_fp = glob(f'{dir}/*.json')
     translated_dir = dir.replace("politifact", "translated")
-    vclaims_fp.append(glob(f'{translated_dir}/*.json'))
+    vclaims_fp.extend(glob(f'{translated_dir}/*.json'))
     vclaims_fp.sort()
     vclaims = {}
     vclaims_list = []
@@ -233,7 +233,8 @@ def predict(model, iclaim_embeddings, vclaim_embeddings, iclaims, vclaims_list):
 
 
 def map_predictions(predictions, iclaims, vclaims_list):
-    splitted_predictions = predictions.reshape(140, 19250)
+    # splitted_predictions = predictions.reshape(140, 19250)
+    splitted_predictions = predictions.reshape(len(iclaims), len(vclaims_list))
     all_scores = {}
     for i, iclaim in enumerate(iclaims):
         iclaim_score = {}

@@ -8,6 +8,7 @@ import re
 from glob import glob
 from os.path import join, dirname, basename, exists
 
+from keras.callbacks import EarlyStopping
 from sentence_transformers import SentenceTransformer
 from nltk.tokenize import sent_tokenize
 import pandas as pd
@@ -226,7 +227,7 @@ def retrain_classifier(model, train_labels, train_embeddings, vclaim_embeddings)
     weight_for_0 = (1 / neg) * (total) / 2.0
     weight_for_1 = (1 / pos) * (total) / 2.0
 
-    class_weight = {0: weight_for_0, 1: weight_for_1}
+    # class_weight = {0: weight_for_0, 1: weight_for_1}
 
     print('Weight for class 0: {:.2f}'.format(weight_for_0))
     print('Weight for class 1: {:.2f}'.format(weight_for_1))
@@ -239,9 +240,9 @@ def retrain_classifier(model, train_labels, train_embeddings, vclaim_embeddings)
 
     model.fit(train_embeddings.reshape((-1, num_sentences)),
               train_labels.reshape((-1, 1)),
-              epochs=15,
+              epochs=50,
               batch_size=2048,
-              class_weight=class_weight)
+          )
 
     return model
 
@@ -362,7 +363,7 @@ if __name__ == '__main__':
                         help="The absolute path to the dev data")
     parser.add_argument("--vclaims-dir-path", "-v", required=True, type=str,
                         help="The absolute path to the directory with the verified claim documents")
-    parser.add_argument("--translated-vclaims-dir-path", "-tv", required=True, type=str,
+    parser.add_argument("--translated-vclaims-dir-path", "-tv", required=False, type=str,
                         help="The absolute path to the directory with the translated verified claim documents")
     parser.add_argument("--iclaims-file-path", "-i", required=True,
                         help="TSV file with iclaims. Format: iclaim_id iclaim_content")

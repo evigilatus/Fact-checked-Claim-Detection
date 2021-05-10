@@ -311,6 +311,8 @@ def run_baselines(args):
 # python baselines/bm25.py --train-file-path=baselines/v1/train.tsv --dev-file-path=baselines/v1/dev.tsv
 # --vclaims-dir-path=baselines/politifact-vclaims --iclaims-file-path=baselines/v1/iclaims.queries --subtask=2b
 # --lang=english
+
+# python baselines/sbert_2a_retrain_translated.py --train-file-path=data/subtask-2a--english/qrels-train.tsv --dev-file-path=data/subtask-2a--english/qrels-dev.tsv --vclaims-dir-path=data/subtask-2a--english/vclaims --iclaims-file-path=data/subtask-2a--english/tweets-train-dev.tsv --subtask=2a --lang=english --iclaims-embeddings-path=embeddings/2a/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2a/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2a/dclaims_embeddings.npy --train-embeddings-path=embeddings/2a/tclaims_embeddings.npy --model-path=model/2a/translated_similarity/classifier.json --weights-path=model/2a/translated_similarity/classifier.h5
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--train-file-path", "-t", required=True, type=str,

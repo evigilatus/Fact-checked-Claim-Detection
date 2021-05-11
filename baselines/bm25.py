@@ -11,7 +11,7 @@ import pandas as pd
 
 sys.path.append('.')
 
-from scorer.main import evaluate
+from baselines.util.baselines_util import format_scores, print_evaluation
 from gensim import corpora
 from gensim.summarization import bm25
 from nltk.corpus import stopwords
@@ -39,11 +39,13 @@ def load_vclaims(dir):
         vclaims_list.append(vclaim)
     return vclaims, vclaims_list
 
+
 def preprocess(doc):
     texts = doc.split()
     lower = [text.lower() for text in texts]
     stopped_tokens = [a for a in lower if not a in en_stop]
     return [p_stemmer.stem(j) for j in stopped_tokens]
+
 
 def get_bm25(docs):
     texts = [preprocess(doc) for doc in docs]  # you can do preprocessing as removing stopwords
@@ -75,14 +77,6 @@ def get_scores(iclaims, bm25_obj, dictionary, vclaims_list, index, search_keys, 
     return scores
 
 
-def format_scores(scores):
-    output_string = ''
-    for iclaim_id in scores:
-        for i, (vclaim_id, score) in enumerate(scores[iclaim_id]):
-            output_string += f"{iclaim_id}\tQ0\t{vclaim_id}\t{i + 1}\t{score}\telasic\n"
-    return output_string
-
-
 def run_baselines(args):
     if not exists('baselines/data'):
         os.mkdir('baselines/data')
@@ -102,15 +96,10 @@ def run_baselines(args):
     bm25_obj, dictionary = get_bm25([vclaim['text'] for vclaim in vclaims_list])
     print(dictionary)
     scores = get_scores(iclaims, bm25_obj, dictionary, vclaims_list, index, search_keys=args.keys, size=args.size)
-    ngram_baseline_fpath = join(ROOT_DIR, f'baselines/data/subtask_{args.subtask}_bm25_{args.lang}_{basename(args.dev_file_path)}')
+    ngram_baseline_fpath = join(ROOT_DIR,
+                                f'baselines/data/subtask_{args.subtask}_bm25_{args.lang}_{basename(args.dev_file_path)}')
     formatted_scores = format_scores(scores)
-    with open(ngram_baseline_fpath, 'w') as f:
-        f.write(formatted_scores)
-    maps, mrr, precisions = evaluate(args.dev_file_path, ngram_baseline_fpath)
-    logging.info(f"Elasticsearch Baseline for Subtask-{args.subtask}--{args.lang}")
-    logging.info(f'All MAP scores on threshold from [1, 3, 5, 10, 20, 50, 1000]. {maps}')
-    logging.info(f'MRR score {mrr}')
-    logging.info(f'All P scores on threshold from [1, 3, 5, 10, 20, 50, 1000]. {precisions}')
+    print_evaluation(args, scores, ROOT_DIR)
 
 
 # python baselines/bm25.py --train-file-path=baselines/v1/train.tsv --dev-file-path=baselines/v1/train.tsv --vclaims-dir-path=baselines/politifact-vclaims --iclaims-file-path=baselines/v1/iclaims.queries --subtask=2b --lang=english

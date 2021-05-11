@@ -1,15 +1,14 @@
-import json
-import pandas as pd
-import random
-import numpy as np
-import logging
 import argparse
+import json
+import logging
 import os
-from os.path import join, dirname, basename, exists
-from glob import glob
 import random
-
 import sys
+from glob import glob
+from os.path import join, dirname, basename, exists
+
+import pandas as pd
+
 sys.path.append('.')
 
 from scorer.main import evaluate

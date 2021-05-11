@@ -68,7 +68,9 @@ def parse_claims(args):
         os.mkdir('baselines/data')
     vclaims, vclaims_list = load_vclaims(args.subtask, args.vclaims_dir_path)
     all_iclaims = pd.read_csv(args.iclaims_file_path, sep='\t', names=['iclaim_id', 'iclaim'])
-    wanted_iclaim_ids = all_iclaims.iclaim_id.tolist()
+    wanted_iclaim_ids = pd.read_csv(args.dev_file_path, sep='\t', names=['iclaim_id', '0', 'vclaim_id', 'relevance'])
+    wanted_iclaim_ids = wanted_iclaim_ids.iclaim_id.tolist()
+
     iclaims = []
     for iclaim_id in wanted_iclaim_ids:
         iclaim = all_iclaims.iclaim[all_iclaims.iclaim_id == iclaim_id].iloc[0]

@@ -9,11 +9,9 @@ from os.path import join, dirname, basename, exists
 
 import pandas as pd
 
-from baselines.util.baselines_util import format_scores, print_evaluation
-
 sys.path.append('.')
 
-from scorer.main import evaluate
+from baselines.util.baselines_util import format_scores, print_evaluation
 from gensim import corpora
 from gensim.summarization import bm25
 from nltk.corpus import stopwords
@@ -79,7 +77,6 @@ def get_scores(iclaims, bm25_obj, dictionary, vclaims_list, index, search_keys, 
     return scores
 
 
-
 def run_baselines(args):
     if not exists('baselines/data'):
         os.mkdir('baselines/data')
@@ -99,7 +96,8 @@ def run_baselines(args):
     bm25_obj, dictionary = get_bm25([vclaim['text'] for vclaim in vclaims_list])
     print(dictionary)
     scores = get_scores(iclaims, bm25_obj, dictionary, vclaims_list, index, search_keys=args.keys, size=args.size)
-    ngram_baseline_fpath = join(ROOT_DIR, f'baselines/data/subtask_{args.subtask}_bm25_{args.lang}_{basename(args.dev_file_path)}')
+    ngram_baseline_fpath = join(ROOT_DIR,
+                                f'baselines/data/subtask_{args.subtask}_bm25_{args.lang}_{basename(args.dev_file_path)}')
     formatted_scores = format_scores(scores)
     print_evaluation(args, scores, ROOT_DIR)
 

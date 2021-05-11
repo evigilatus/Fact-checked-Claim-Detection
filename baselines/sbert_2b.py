@@ -25,35 +25,6 @@ sbert = SentenceTransformer('paraphrase-distilroberta-base-v1')
 num_sentences = 4
 
 
-def load_dataset(ids_fp, pairs_fp):
-    INPUT_COLUMNS = ["sentence_id", "sentence"]
-    dataset = pd.read_csv(ids_fp,
-                          sep='\t',
-                          header=None,
-                          names=INPUT_COLUMNS,
-                          index_col=False)
-    dataset['vclaim_ids'] = [[] for _ in range(len(dataset))]
-    with open(pairs_fp) as f:
-        for line in f.readlines():
-            sentence_id, vclaim_id = line.strip().split('\t')
-            sentence_id, vclaim_id = int(sentence_id), int(vclaim_id)
-            row = dataset[dataset.sentence_id == sentence_id].iloc[0]
-            row.vclaim_ids.append(vclaim_id)
-    return dataset
-
-
-def load_claim_files(claim_ids):
-    # For each title, find the corresponding json file
-    loaded_claims = []
-    for id in claim_ids['vclaim_id']:
-        claim_filename = DATA_DIR + id + ".json"
-        with open(claim_filename) as claim_json:
-            claim = json.load(claim_json)
-        loaded_claims.append(claim)
-
-    return loaded_claims
-
-
 def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
     if args.train_embeddings_path:
         # Load train data encodings from path

@@ -10,12 +10,13 @@ import pandas as pd
 from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer
 
+sys.path.append('.')
+
 from baselines.util.baselines_util import create_args_parser, print_evaluation, get_labels
 from baselines.util.classifier import predict, load_classifier
 from baselines.util.preprocessing_util import preprocess_iclaim, preprocess_vclaim, parse_claims, \
     parse_datasets
 
-sys.path.append('.')
 
 random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))

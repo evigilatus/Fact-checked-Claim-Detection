@@ -7,12 +7,13 @@ import numpy as np
 from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer
 
+sys.path.append('.')
+
 from baselines.util.baselines_util import create_args_parser, get_labels, print_evaluation
 from baselines.util.classifier import predict, load_classifier
 from baselines.util.preprocessing_util import preprocess_iclaims, preprocess_vclaims, parse_datasets, \
     parse_claims
 
-sys.path.append('.')
 
 random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))

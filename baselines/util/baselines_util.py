@@ -1,13 +1,13 @@
 import argparse
 import logging
-import os
-from os.path import join, dirname, basename, exists
+from os.path import join, basename
 
 import numpy as np
-from tqdm import tqdm
 from sklearn.metrics.pairwise import cosine_similarity
+from tqdm import tqdm
 
 from scorer.main import evaluate
+
 
 # S-BERT Experiment
 def get_sbert_body_scores(input_embeddings, vclaim_embeddings, num_sentences):

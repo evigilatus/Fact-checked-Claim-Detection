@@ -61,7 +61,7 @@ torch==1.8.1
 torchaudio==0.8.1
 torchvision==0.9.1
 tqdm==4.56.0
-transformers==4.4.2
+transformers~=4.1.1
 trectools==0.0.44
 typed-ast @ file:///C:/ci/typed-ast_1610466535590/work
 typing-extensions @ file:///home/ktietz/src/ci_mi/typing_extensions_1612808209620/work
@@ -69,3 +69,6 @@ urllib3==1.26.3
 win-inet-pton @ file:///C:/ci/win_inet_pton_1605306167264/work
 wincertstore==0.2
 wrapt==1.12.1
+
+tensorflow-gpu~=2.4.1
+nltk~=3.5

@@ -1,5 +1,3 @@
-import json
-import json
 import logging
 import os
 import random
@@ -7,7 +5,6 @@ import sys
 from os.path import dirname, exists
 
 import numpy as np
-import pandas as pd
 from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer
 
@@ -16,7 +13,7 @@ sys.path.append('.')
 from baselines.util.baselines_util import create_args_parser, print_evaluation, get_labels
 from baselines.util.classifier import predict, load_classifier
 from baselines.util.preprocessing_util import preprocess_iclaim, preprocess_vclaim, \
-    parse_datasets, load_vclaims, load_iclaims
+    parse_datasets, load_vclaims, load_iclaims, Subtask
 
 random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))
@@ -37,7 +34,7 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         tclaim_ids = tclaims.iclaim_id.tolist()
         for iclaim_id in tclaim_ids:
             iclaim = all_iclaims.iclaim[all_iclaims.iclaim_id == iclaim_id].iloc[0]
-            train_encodings.append(sbert.encode(preprocess_iclaim(iclaim)))
+            train_encodings.append(sbert.encode(preprocess_iclaim(Subtask.B, iclaim)))
 
         if args.store_embeddings:
             np.save('embeddings/tclaims_embeddings.npy', np.array(train_encodings))
@@ -49,7 +46,7 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         logging.info("All iclaims embeddings loaded successfully.")
     else:
         # Compute the encodings for all iclaims
-        iclaims_encodings = [sbert.encode(preprocess_iclaim(iclaim[1])) for iclaim in iclaims]
+        iclaims_encodings = [sbert.encode(preprocess_iclaim(Subtask.B, iclaim[1])) for iclaim in iclaims]
         if args.store_embeddings:
             np.save('embeddings/iclaims_embeddings.npy', np.array(iclaims_encodings))
         logging.info("All iclaims encoded successfully.")
@@ -60,7 +57,7 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         logging.info("All vclaims embeddings loaded successfully.")
     else:
         # Compute the encodings for all vclaims in all texts
-        texts = [preprocess_vclaim(vclaim) for vclaim in vclaims_list]
+        texts = [preprocess_vclaim(Subtask.B, vclaim) for vclaim in vclaims_list]
         vclaim_encodings = [sbert.encode(sent_tokenize(text)) for text in texts]
         if args.store_embeddings:
             np.save('embeddings/vclaims_embeddings.npy', np.array(vclaim_encodings))
@@ -76,7 +73,7 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
         dclaim_ids = dclaims.iclaim_id.tolist()
         for iclaim_id in dclaim_ids:
             iclaim = all_iclaims.iclaim[all_iclaims.iclaim_id == iclaim_id].iloc[0]
-            dclaim_encodings.append(sbert.encode(preprocess_iclaim(iclaim)))
+            dclaim_encodings.append(sbert.encode(preprocess_iclaim(Subtask.B, iclaim)))
 
         if args.store_embeddings:
             np.save('embeddings/dclaims_embeddings.npy', np.array(dclaim_encodings))
@@ -101,9 +98,6 @@ def run_baselines(args):
     print_evaluation(args, predictions, ROOT_DIR)
 
 
-# python baselines/bm25.py --train-file-path=baselines/v1/train.tsv --dev-file-path=baselines/v1/dev.tsv
-# --vclaims-dir-path=baselines/politifact-vclaims --iclaims-file-path=baselines/v1/iclaims.queries --subtask=2b
-# --lang=english
 if __name__ == '__main__':
     parser = create_args_parser()
     args = parser.parse_args()

@@ -9,28 +9,18 @@ from os.path import join, dirname, basename, exists
 
 import pandas as pd
 
+from baselines.util.baselines_util import create_args_parser
+from baselines.util.preprocessing_util import load_vclaims
+
 sys.path.append('.')
 
 from scorer.main import evaluate
-# from format_checker.subtask_1a import check_format
 
 random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))
 
 logging.basicConfig(format='%(levelname)s : %(message)s', level=logging.INFO)
 
-
-def load_vclaims(dir):
-    vclaims_fp = glob(f'{dir}/*.json')
-    vclaims_fp.sort()
-    vclaims = {}
-    for vclaim_fp in vclaims_fp:
-        with open(vclaim_fp) as f:
-            vclaim = json.load(f)
-        # print(vclaim)
-        # print(vclaim['vclaim_id'])
-        vclaims[vclaim['vclaim_id']] = vclaim
-    return vclaims
 
 def run_random_baseline(data_fpath, vclaims, results_fpath):
     print(data_fpath)
@@ -60,19 +50,8 @@ def run_baselines(train_fpath, test_fpath, vclaim_dpath, lang, subtask):
     logging.info(f'MRR score {mrr}')
     logging.info(f'All P scores on threshold from [1, 3, 5, 10, 20, 50, 1000]. {precisions}')
 
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--train-file-path", "-t", required=True, type=str,
-                        help="The absolute path to the training data")
-    parser.add_argument("--dev-file-path", "-d", required=True, type=str,
-                        help="The absolute path to the dev data")
-    parser.add_argument("--vclaims-dir-path", "-v", required=True, type=str,
-                        help="The absolute path to the directory with the verified claim documents")
-    parser.add_argument("--subtask", "-m", required=True, 
-                        choices=['2a', '2b'],
-                        help="The subtask you want to check the format of.")
-    parser.add_argument("--lang", "-l", required=True, type=str,
-                        choices=['arabic', 'english'],
-                        help="The language of the subtask")
+    parser = create_args_parser()
     args = parser.parse_args()
     run_baselines(args.train_file_path, args.dev_file_path, args.vclaims_dir_path, args.lang, args.subtask)

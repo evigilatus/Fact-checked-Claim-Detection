@@ -1,9 +1,10 @@
 import json
 import json
 import logging
+import os
 import random
 import sys
-from os.path import dirname
+from os.path import dirname, exists
 
 import numpy as np
 import pandas as pd
@@ -14,9 +15,8 @@ sys.path.append('.')
 
 from baselines.util.baselines_util import create_args_parser, print_evaluation, get_labels
 from baselines.util.classifier import predict, load_classifier
-from baselines.util.preprocessing_util import preprocess_iclaim, preprocess_vclaim, parse_claims, \
-    parse_datasets
-
+from baselines.util.preprocessing_util import preprocess_iclaim, preprocess_vclaim, \
+    parse_datasets, load_vclaims, load_iclaims
 
 random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))
@@ -86,13 +86,14 @@ def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
 
 
 def run_baselines(args):
-    vclaims, vclaims_list, iclaims, all_iclaims = parse_claims(args)
+    if not exists('baselines/data'):
+        os.mkdir('baselines/data')
+    vclaims, vclaims_list = load_vclaims(args.vclaims_dir_path)
+    iclaims, all_iclaims = load_iclaims(args)
     dev_dataset, train_dataset = parse_datasets(args)
-
     train_encodings, iclaims_encodings, vclaim_encodings, dev_encodings = get_encodings(args, all_iclaims,
                                                                                         train_dataset, iclaims,
                                                                                         vclaims_list, dev_dataset)
-
     # Classify S-BERT scores
     train_labels = get_labels(train_dataset.vclaim_id, vclaims)
     classifier = load_classifier(args, train_labels, train_encodings, vclaim_encodings)

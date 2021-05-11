@@ -47,6 +47,7 @@ def create_classifier(train_labels, train_embeddings, vclaim_embeddings):
 
     return model
 
+
 def predict(model, iclaim_embeddings, vclaim_embeddings, iclaims, vclaims_list):
     test_scores = get_sbert_body_scores(iclaim_embeddings, vclaim_embeddings, NUM_SENTENCES)
     predictions = model.predict(test_scores.reshape((-1, NUM_SENTENCES)))

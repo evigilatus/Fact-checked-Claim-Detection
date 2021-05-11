@@ -1,10 +1,14 @@
 import json
-import os
 import re
 from glob import glob
-from os.path import exists
 
 import pandas as pd
+import enum
+
+
+class Subtask(enum.Enum):
+    A = '2a'
+    B = '2b'
 
 
 def delete_link(text):
@@ -27,24 +31,22 @@ def remove_new_lines(text):
     return text.replace("\n", "")
 
 
-def preprocess_iclaims(iclaim):
-    return separate_words(delete_link(iclaim))
+def preprocess_iclaim(subtask, iclaim):
+    if subtask == Subtask.A:
+        return separate_words(delete_link(iclaim))
+    if subtask == Subtask.B:
+        return separate_words(iclaim)
 
 
-def preprocess_vclaims(vclaim):
-    return remove_last_punctuation(
-        separate_words(vclaim['title'] + " " + vclaim['subtitle'] + " " + vclaim['vclaim'])) + ' ' + vclaim['date']
+def preprocess_vclaim(subtask, vclaim):
+    if subtask == Subtask.A:
+        remove_last_punctuation(
+            separate_words(vclaim['title'] + " " + vclaim['subtitle'] + " " + vclaim['vclaim'])) + ' ' + vclaim['date']
+    if subtask == Subtask.B:
+        return separate_words(remove_new_lines(vclaim['title'] + " " + vclaim['text']))
 
 
-def preprocess_iclaim(iclaim):
-    return separate_words(iclaim)
-
-
-def preprocess_vclaim(vclaim):
-    return separate_words(remove_new_lines(vclaim['title'] + " " + vclaim['text']))
-
-
-def load_vclaims(task, dir):
+def load_vclaims(dir):
     vclaims_fp = glob(f'{dir}/*.json')
     # TODO Fix logic for translated data and uncomment the following lines
     # if task == '2b':
@@ -64,20 +66,16 @@ def load_vclaims(task, dir):
     return vclaims, vclaims_list
 
 
-def parse_claims(args):
-    if not exists('baselines/data'):
-        os.mkdir('baselines/data')
-    vclaims, vclaims_list = load_vclaims(args.subtask, args.vclaims_dir_path)
+def load_iclaims(args):
     all_iclaims = pd.read_csv(args.iclaims_file_path, sep='\t', names=['iclaim_id', 'iclaim'])
     wanted_iclaim_ids = pd.read_csv(args.dev_file_path, sep='\t', names=['iclaim_id', '0', 'vclaim_id', 'relevance'])
     wanted_iclaim_ids = wanted_iclaim_ids.iclaim_id.tolist()
-
     iclaims = []
     for iclaim_id in wanted_iclaim_ids:
         iclaim = all_iclaims.iclaim[all_iclaims.iclaim_id == iclaim_id].iloc[0]
         iclaims.append((iclaim_id, iclaim))
 
-    return vclaims, vclaims_list, iclaims, all_iclaims
+    return iclaims, all_iclaims
 
 
 def parse_datasets(args):

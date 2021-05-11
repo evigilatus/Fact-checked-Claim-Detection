@@ -46,9 +46,10 @@ def preprocess_vclaim(vclaim):
 
 def load_vclaims(task, dir):
     vclaims_fp = glob(f'{dir}/*.json')
-    if task == '2b':
-        translated_dir = dir.replace("politifact", "translated")
-        vclaims_fp.append(glob(f'{translated_dir}/*.json'))
+    # TODO Fix logic for translated data and uncomment the following lines
+    # if task == '2b':
+    #     translated_dir = dir.replace("politifact", "translated")
+    #     vclaims_fp.append(glob(f'{translated_dir}/*.json'))
     vclaims_fp.sort()
     vclaims = {}
     vclaims_list = []

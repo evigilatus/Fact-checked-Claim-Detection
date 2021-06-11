@@ -1,7 +1,7 @@
 # Fact Checked Claim Detection
 
 ## About
-This project solves the [CheckThat! 2021’s task](https://github.com/sshaar/clef2020-factchecking-task2) for claim retrieval. 
+This project solves the [CheckThat! 2021’s task](https://gitlab.com/checkthat_lab/clef2021-checkthat-lab/-/tree/master/task2) for claim retrieval. 
 The task is to rank a set of already verified claims by their relevance to a given input text, which contains a claim.
 
 Our pipeline consists of the following steps:

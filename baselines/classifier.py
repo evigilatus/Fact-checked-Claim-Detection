@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer, util
-import tensorflow as tf
 from tensorflow.python.keras.layers import Dense
+import tensorflow as tf
 from tensorflow.python.keras.models import Sequential, model_from_json
 from tqdm import tqdm
 
@@ -25,7 +25,6 @@ from scorer.main import evaluate
 
 random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))
-DATA_DIR = "data/subtask-2b--english/politifact-vclaims/"
 
 sbert = SentenceTransformer('paraphrase-distilroberta-base-v1')
 num_sentences = 4
@@ -53,29 +52,18 @@ def load_vclaims(dir):
     vclaims_fp.sort()
     vclaims = {}
     vclaims_list = []
+    index = 0
     for vclaim_fp in vclaims_fp:
         with open(vclaim_fp) as f:
             vclaim = json.load(f)
+        vclaim['file_id'] = index
         vclaims[vclaim['vclaim_id']] = vclaim
         vclaims_list.append(vclaim)
+        index = index + 1
     return vclaims, vclaims_list
 
 
-def load_claim_files(claim_ids):
-    # For each title, find the corresponding json file
-    loaded_claims = []
-    for id in claim_ids['vclaim_id']:
-        claim_filename = DATA_DIR + id + ".json"
-        with open(claim_filename) as claim_json:
-            claim = json.load(claim_json)
-        loaded_claims.append(claim)
-
-    return loaded_claims
-
-
 def get_encodings(args, all_iclaims, tclaims, iclaims, vclaims_list, dclaims):
-    iclaims_count, vclaims_count = len(iclaims), len(vclaims_list)
-    scores = {}
 
     if args.train_embeddings_path:
         # Load train data encodings from path
@@ -146,8 +134,6 @@ def format_scores(scores):
 def get_sbert_body_scores(input_embeddings, vclaim_embeddings, num_sentences):
     sbert_vclaims_text_scores = np.zeros((len(input_embeddings), num_sentences, len(vclaim_embeddings)))
 
-    # for i, input_embedding in enumerate(input_embeddings):
-    #    print(i)
     for vclaim_id, sbert_embeddings in enumerate(tqdm(vclaim_embeddings)):
         if not len(sbert_embeddings):
             continue
@@ -156,17 +142,9 @@ def get_sbert_body_scores(input_embeddings, vclaim_embeddings, num_sentences):
                                               sbert_embeddings)  # util.semantic_search(input_embedding, sbert_embeddings, top_k = num_sentences)
         scores = []
 
-        # for vclaim_text_queries_score in vclaim_text_queries_scores:
-        #   for vclaim_text_score in vclaim_text_queries_score:
-        #     scores.append(vclaim_text_score['score'])
-
         vclaim_text_score = np.sort(vclaim_text_score)
         n = min(num_sentences, len(sbert_embeddings))
         sbert_vclaims_text_scores[:, :n, vclaim_id] = vclaim_text_score[:, -n:]
-
-        # n = min(num_sentences, len(scores))
-
-    print(sbert_vclaims_text_scores.shape)
 
     return sbert_vclaims_text_scores.transpose((0, 2, 1))
 
@@ -210,11 +188,14 @@ def create_classifier(train_labels, train_embeddings, vclaim_embeddings):
     logging.info(f"Train embeddings shape-{train_embeddings.reshape((-1, num_sentences))}")
     logging.info(f"Train labels shape-{train_labels.reshape((-1, 1))}")
 
+    callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
+
     model.fit(train_embeddings.reshape((-1, num_sentences)),
               train_labels.reshape((-1, 1)),
-              epochs=25,
+              epochs=50,
               batch_size=2048,
-              class_weight=class_weight)
+              class_weight=class_weight,
+              callbacks=[callback])
 
     return model
 
@@ -227,7 +208,7 @@ def predict(model, iclaim_embeddings, vclaim_embeddings, iclaims, vclaims_list):
 
 
 def map_predictions(predictions, iclaims, vclaims_list):
-    splitted_predictions = predictions.reshape(140, 19250)
+    splitted_predictions = predictions.reshape(len(iclaims), len(vclaims_list))
     all_scores = {}
     for i, iclaim in enumerate(iclaims):
         iclaim_score = {}
@@ -244,7 +225,7 @@ def get_labels(vclaim_ids, verified_claims):
     labels = np.zeros((len(vclaim_ids), len(verified_claims)))
 
     for i, vclaim_id in enumerate(vclaim_ids):
-        labels[i][int(vclaim_id[-5:])] = 1
+        labels[i][verified_claims[vclaim_id]['file_id']] = 1
     return labels
 
 
@@ -270,9 +251,6 @@ def run_baselines(args):
 
     # Classify S-BERT scores
     train_labels = get_labels(train_dataset.vclaim_id, vclaims)
-    test_labels = get_labels(dev_dataset.vclaim_id, vclaims)
-
-    # train_scores = get_sbert_body_scores(train_encodings, vclaim_encodings, num_sentences)
 
     if args.model_path:
         json_file = open(args.model_path, 'r')
@@ -295,7 +273,6 @@ def run_baselines(args):
     predictions = predict(classifier, dev_encodings, vclaim_encodings, iclaims, vclaims_list)
 
     # options are title, vclaim, text
-    # scores = get_scores(iclaims, vclaims_list, iclaims_encodings, vclaim_encodings)
     ngram_baseline_fpath = join(ROOT_DIR,
                                 f'baselines/data/subtask_{args.subtask}_sbert_{args.lang}_{basename(args.dev_file_path)}')
     formatted_scores = format_scores(predictions)
@@ -312,7 +289,15 @@ def run_baselines(args):
 # --vclaims-dir-path=baselines/politifact-vclaims --iclaims-file-path=baselines/v1/iclaims.queries --subtask=2b
 # --lang=english
 
-# python baselines/sbert_2a_retrain_translated.py --train-file-path=data/subtask-2a--english/qrels-train.tsv --dev-file-path=data/subtask-2a--english/qrels-dev.tsv --vclaims-dir-path=data/subtask-2a--english/vclaims --iclaims-file-path=data/subtask-2a--english/tweets-train-dev.tsv --subtask=2a --lang=english --iclaims-embeddings-path=embeddings/2a/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2a/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2a/dclaims_embeddings.npy --train-embeddings-path=embeddings/2a/tclaims_embeddings.npy --model-path=model/2a/translated_similarity/classifier.json --weights-path=model/2a/translated_similarity/classifier.h5
+# translated 2a
+# python baselines/classifier.py --train-file-path=data/subtask-2a--english/qrels-train.tsv --dev-file-path=data/subtask-2a--english/qrels-dev.tsv --vclaims-dir-path=data/subtask-2a--english/vclaims --iclaims-file-path=data/subtask-2a--english/tweets-train-dev.tsv --subtask=2a --lang=english --iclaims-embeddings-path=embeddings/2a/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2a/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2a/dclaims_embeddings.npy --train-embeddings-path=embeddings/2a/tclaims_embeddings.npy --model-path=model/2a/translated_similarity/classifier.json --weights-path=model/2a/translated_similarity/classifier.h5
+# cosine 2a
+# python baselines/classifier.py --train-file-path=data/subtask-2a--english/qrels-train.tsv --dev-file-path=data/subtask-2a--english/qrels-dev.tsv --vclaims-dir-path=data/subtask-2a--english/vclaims --iclaims-file-path=data/subtask-2a--english/tweets-train-dev.tsv --subtask=2a --lang=english --iclaims-embeddings-path=embeddings/2a/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2a/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2a/dclaims_embeddings.npy --train-embeddings-path=embeddings/2a/tclaims_embeddings.npy --model-path=model/2a/cosine_similarity/classifier.json --weights-path=model/2a/cosine_similarity/classifier.h5
+# train 2a
+# python baselines/classifier.py --train-file-path=data/subtask-2a--english/qrels-train.tsv --dev-file-path=data/subtask-2a--english/qrels-dev.tsv --vclaims-dir-path=data/subtask-2a--english/vclaims --iclaims-file-path=data/subtask-2a--english/tweets-train-dev.tsv --subtask=2a --lang=english --iclaims-embeddings-path=embeddings/2a/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2a/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2a/dclaims_embeddings.npy --train-embeddings-path=embeddings/2a/tclaims_embeddings.npy
+
+# train 2b
+# python baselines/classifier.py --train-file-path=data/subtask-2b--english/v1/train.tsv --dev-file-path=data/subtask-2b--english/v1/dev.tsv --vclaims-dir-path=data/subtask-2b--english/politifact-vclaims --iclaims-file-path=data/subtask-2b--english/v1/iclaims.queries --subtask=2b --lang=english --iclaims-embeddings-path=embeddings/2b/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2b/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2b/dclaims_embeddings.npy --train-embeddings-path=embeddings/2b/tclaims_embeddings.npy --store-model=true
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--train-file-path", "-t", required=True, type=str,

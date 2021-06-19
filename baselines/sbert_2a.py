@@ -31,6 +31,8 @@ sbert = SentenceTransformer('paraphrase-distilroberta-base-v1')
 
 num_sentences = 4
 
+def remove_new_lines(text):
+    return text.replace("\n", "")
 
 def load_vclaims(dir):
     vclaims_fp = glob(f'{dir}/*.json')

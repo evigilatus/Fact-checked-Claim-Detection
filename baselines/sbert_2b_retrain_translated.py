@@ -83,7 +83,7 @@ def get_translated_encodings(args, all_translated_iclaims, tclaims, vclaims_list
         for iclaim_id in tclaim_ids:
             iclaim = all_translated_iclaims.iclaim[all_translated_iclaims.iclaim_id == iclaim_id].iloc[0]
             translated_train_encodings.append(sbert.encode(preprocess_iclaims(iclaim)))
-        np.save('embeddings/2a/translated_claims_embeddings.npy', np.array(translated_train_encodings))
+        np.save('embeddings/2b/translated_claims_embeddings.npy', np.array(translated_train_encodings))
         logging.info("All Translated train claims encoded successfully.")
 
     if args.translated_vclaims_embeddings_path:
@@ -94,7 +94,7 @@ def get_translated_encodings(args, all_translated_iclaims, tclaims, vclaims_list
         # Compute the encodings for all vclaims in all texts
         texts = [preprocess_vclaims(vclaim) for vclaim in vclaims_list]
         translated_vclaim_encodings = [sbert.encode(sent_tokenize(text)) for text in texts]
-        np.save('embeddings/2a/translated_vclaims_embeddings.npy', np.array(translated_vclaim_encodings))
+        np.save('embeddings/2b/translated_vclaims_embeddings.npy', np.array(translated_vclaim_encodings))
         logging.info("All translated vclaims encoded successfully.")
     return translated_train_encodings, translated_vclaim_encodings
 
@@ -318,17 +318,17 @@ def run_baselines(args):
         classifier.load_weights(args.weights_path)
         if args.retrain_model:
             # TODO: ITS HARDCODED
-            all_translated_iclaims = pd.read_csv('data/subtask-2a--english/processed-tweets-train-dev.tr.tsv', sep='\t',
+            all_translated_iclaims = pd.read_csv('data/subtask-2b--english/processed-tweets-train-dev.tr.tsv', sep='\t',
                                                  names=['iclaim_id', 'iclaim'])
             translated_vclaims, translated_vclaims_list = load_vclaims(args.translated_vclaims_dir_path)
             translated_train_encodings, translated_vclaim_encodings = get_translated_encodings(args, all_translated_iclaims, train_dataset, translated_vclaims_list)
             classifier = retrain_classifier(classifier, train_labels, translated_train_encodings, translated_vclaim_encodings)
             logging.info(f"Loaded model from {args.weights_path}")
             model_json = classifier.to_json()
-            with open("model/2a/translated_similarity/classifier.json", "w") as json_file:
+            with open("model/2b/translated_similarity/classifier.json", "w") as json_file:
                 json_file.write(model_json)
             # Serialize weights to HDF5
-            classifier.save_weights("model/2a/translated_similarity/classifier.h5")
+            classifier.save_weights("model/2b/translated_similarity/classifier.h5")
             logging.info("Saved retrained model to disk")
     else:
         classifier = create_classifier(train_labels, train_encodings, vclaim_encodings)
@@ -344,7 +344,7 @@ def run_baselines(args):
     predictions = predict(classifier, dev_encodings, vclaim_encodings, iclaims, vclaims_list)
 
     ngram_baseline_fpath = join(ROOT_DIR,
-                                f'baselines/data/subtask_{args.subtask}_sbert_2a_retrain_translated_{args.lang}_{basename(args.dev_file_path)}')
+                                f'baselines/data/subtask_{args.subtask}_sbert_2b_retrain_translated_{args.lang}_{basename(args.dev_file_path)}')
     formatted_scores = format_scores(predictions)
 
     with open(ngram_baseline_fpath, 'w') as f:
@@ -357,7 +357,7 @@ def run_baselines(args):
     logging.info(f'All P scores on threshold from [1, 3, 5, 10, 20, 50, 1000]. {precisions}')
 
 
-# python baselines/sbert_2a_retrain_translated.py --train-file-path=data/subtask-2a--english/qrels-train.tsv --dev-file-path=data/subtask-2a--english/qrels-dev.tsv --translated-vclaims-dir-path=data/subtask-2a--english/translated_vclaims --vclaims-dir-path=data/subtask-2a--english/vclaims --iclaims-file-path=data/subtask-2a--english/tweets-train-dev.tsv --subtask=2a --lang=english --iclaims-embeddings-path=embeddings/2a/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2a/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2a/dclaims_embeddings.npy --train-embeddings-path=embeddings/2a/tclaims_embeddings.npy --model-path=model/2a/cosine_similarity/classifier.json --weights-path=model/2a/cosine_similarity/classifier.h5 --translated-train-embeddings-path=embeddings/2a/translated_claims_embeddings.npy --translated-vclaims-embeddings-path=embeddings/2a/translated_vclaims_embeddings.npy --retrain-model=true
+# python baselines/sbert_2b_retrain_translated.py --train-file-path=data/subtask-2b--english/qrels-train.tsv --dev-file-path=data/subtask-2b--english/qrels-dev.tsv --translated-vclaims-dir-path=data/subtask-2b--english/translated_vclaims --vclaims-dir-path=data/subtask-2b--english/vclaims --iclaims-file-path=data/subtask-2b--english/tweets-train-dev.tsv --subtask=2b --lang=english --iclaims-embeddings-path=embeddings/2b/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2b/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2b/dclaims_embeddings.npy --train-embeddings-path=embeddings/2b/tclaims_embeddings.npy --model-path=model/2b/cosine_similarity/classifier.json --weights-path=model/2b/cosine_similarity/classifier.h5 --translated-train-embeddings-path=embeddings/2b/translated_claims_embeddings.npy --translated-vclaims-embeddings-path=embeddings/2b/translated_vclaims_embeddings.npy --retrain-model=true
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

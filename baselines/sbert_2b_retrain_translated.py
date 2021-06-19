@@ -69,7 +69,7 @@ def preprocess_iclaims(iclaim):
 
 
 def preprocess_vclaims(vclaim):
-    return remove_last_punctuation(separate_words(vclaim['title'] + " " + vclaim['subtitle'] + " " +  vclaim['vclaim'])) + ' ' +  vclaim['date']
+    return remove_last_punctuation(separate_words(vclaim['title'] + " " + vclaim['vclaim'] + " " +  vclaim['text'])) + ' ' +  vclaim['date']
 
 
 def get_translated_encodings(args, all_translated_iclaims, tclaims, vclaims_list):
@@ -98,6 +98,7 @@ def get_translated_encodings(args, all_translated_iclaims, tclaims, vclaims_list
         logging.info("All translated vclaims encoded successfully.")
     return translated_train_encodings, translated_vclaim_encodings
 
+
 def get_encodings(args, all_iclaims, tclaims, dclaims, iclaims, vclaims_list):
     if args.train_embeddings_path:
         # Load train data encodings from path
@@ -113,7 +114,7 @@ def get_encodings(args, all_iclaims, tclaims, dclaims, iclaims, vclaims_list):
           train_encodings.append(sbert.encode(preprocess_iclaims(iclaim)))
         
         if args.store_embeddings:
-          np.save('embeddings/tclaims_embeddings.npy', np.array(train_encodings))
+          np.save('embeddings/2b/tclaims_embeddings.npy', np.array(train_encodings))
         logging.info("All train claims encoded successfully.")
 
     if args.iclaims_embeddings_path:
@@ -124,7 +125,7 @@ def get_encodings(args, all_iclaims, tclaims, dclaims, iclaims, vclaims_list):
         # Compute the encodings for all iclaims
         iclaims_encodings = [sbert.encode(preprocess_iclaims(iclaim[1])) for iclaim in iclaims]
         if args.store_embeddings:
-            np.save('embeddings/iclaims_embeddings.npy', np.array(iclaims_encodings))
+            np.save('embeddings/2b/iclaims_embeddings.npy', np.array(iclaims_encodings))
         logging.info("All iclaims encoded successfully.")
 
     if args.vclaims_embeddings_path:
@@ -136,7 +137,7 @@ def get_encodings(args, all_iclaims, tclaims, dclaims, iclaims, vclaims_list):
         texts = [preprocess_vclaims(vclaim) for vclaim in vclaims_list]
         vclaim_encodings = [sbert.encode(sent_tokenize(text)) for text in texts]
         if args.store_embeddings:
-            np.save('embeddings/vclaims_embeddings.npy', np.array(vclaim_encodings))
+            np.save('embeddings/2b/vclaims_embeddings.npy', np.array(vclaim_encodings))
         logging.info("All vclaims encoded successfully.")
 
     if args.dev_embeddings_path:
@@ -152,7 +153,7 @@ def get_encodings(args, all_iclaims, tclaims, dclaims, iclaims, vclaims_list):
           dclaim_encodings.append(sbert.encode(preprocess_iclaims(iclaim)))
 
         if args.store_embeddings:
-            np.save('embeddings/dclaims_embeddings.npy', np.array(dclaim_encodings))
+            np.save('embeddings/2b/dclaims_embeddings.npy', np.array(dclaim_encodings))
         logging.info("All dclaims encoded successfully.")
 
     return train_encodings, dclaim_encodings, iclaims_encodings, vclaim_encodings
@@ -318,7 +319,7 @@ def run_baselines(args):
         classifier.load_weights(args.weights_path)
         if args.retrain_model:
             # TODO: ITS HARDCODED
-            all_translated_iclaims = pd.read_csv('data/subtask-2b--english/processed-tweets-train-dev.tr.tsv', sep='\t',
+            all_translated_iclaims = pd.read_csv('data/subtask-2b--english/v1/iclaims.queries', sep='\t',
                                                  names=['iclaim_id', 'iclaim'])
             translated_vclaims, translated_vclaims_list = load_vclaims(args.translated_vclaims_dir_path)
             translated_train_encodings, translated_vclaim_encodings = get_translated_encodings(args, all_translated_iclaims, train_dataset, translated_vclaims_list)
@@ -357,7 +358,8 @@ def run_baselines(args):
     logging.info(f'All P scores on threshold from [1, 3, 5, 10, 20, 50, 1000]. {precisions}')
 
 
-# python baselines/sbert_2b_retrain_translated.py --train-file-path=data/subtask-2b--english/qrels-train.tsv --dev-file-path=data/subtask-2b--english/qrels-dev.tsv --translated-vclaims-dir-path=data/subtask-2b--english/translated_vclaims --vclaims-dir-path=data/subtask-2b--english/vclaims --iclaims-file-path=data/subtask-2b--english/tweets-train-dev.tsv --subtask=2b --lang=english --iclaims-embeddings-path=embeddings/2b/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2b/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2b/dclaims_embeddings.npy --train-embeddings-path=embeddings/2b/tclaims_embeddings.npy --model-path=model/2b/cosine_similarity/classifier.json --weights-path=model/2b/cosine_similarity/classifier.h5 --translated-train-embeddings-path=embeddings/2b/translated_claims_embeddings.npy --translated-vclaims-embeddings-path=embeddings/2b/translated_vclaims_embeddings.npy --retrain-model=true
+# python baselines/sbert_2b_retrain_translated.py --train-file-path=data/subtask-2b--english/v1/train.tsv --dev-file-path=data/subtask-2b--english/v1/dev.tsv --translated-vclaims-dir-path=data/subtask-2b--english/translated-vclaims --vclaims-dir-path=data/subtask-2b--english/politifact-vclaims --iclaims-file-path=data/subtask-2b--english/v1/iclaims.queries --subtask=2b --lang=english --iclaims-embeddings-path=embeddings/2b/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2b/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2b/dclaims_embeddings.npy --train-embeddings-path=embeddings/2b/tclaims_embeddings.npy --model-path=model/2b/cosine_similarity/classifier.json --weights-path=model/2b/cosine_similarity/classifier.h5 --translated-train-embeddings-path=embeddings/2b/translated_claims_embeddings.npy --retrain-model=true
+# python baselines/sbert_2b_retrain_translated.py --train-file-path=data/subtask-2b--english/v1/train.tsv --dev-file-path=data/subtask-2b--english/v1/dev.tsv --translated-vclaims-dir-path=data/subtask-2b--english/translated-vclaims --vclaims-dir-path=data/subtask-2b--english/politifact-vclaims --iclaims-file-path=data/subtask-2b--english/v1/iclaims.queries --subtask=2b --lang=english --iclaims-embeddings-path=embeddings/2b/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2b/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2b/dclaims_embeddings.npy --train-embeddings-path=embeddings/2b/tclaims_embeddings.npy --model-path=model/2b/cosine_similarity/classifier.json --weights-path=model/2b/cosine_similarity/classifier.h5 --translated-train-embeddings-path=embeddings/2b/translated_claims_embeddings.npy --translated-vclaims-embeddings-path=embeddings/2b/translated_vclaims_embeddings.npy --retrain-model=true
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

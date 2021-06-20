@@ -17,7 +17,7 @@ import tensorflow as tf
 from tensorflow.python.keras.models import Sequential, model_from_json
 from tqdm import tqdm
 
-from sbert_2a import separate_words, remove_new_lines
+from util.preprocessing_util import separate_words, remove_new_lines
 
 sys.path.append('.')
 
@@ -298,6 +298,7 @@ def run_baselines(args):
 
 # train 2b
 # python baselines/classifier.py --train-file-path=data/subtask-2b--english/v1/train.tsv --dev-file-path=data/subtask-2b--english/v1/dev.tsv --vclaims-dir-path=data/subtask-2b--english/politifact-vclaims --iclaims-file-path=data/subtask-2b--english/v1/iclaims.queries --subtask=2b --lang=english --iclaims-embeddings-path=embeddings/2b/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2b/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2b/dclaims_embeddings.npy --train-embeddings-path=embeddings/2b/tclaims_embeddings.npy --store-model=true
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--train-file-path", "-t", required=True, type=str,

@@ -8,7 +8,6 @@ import re
 from glob import glob
 from os.path import join, dirname, basename, exists
 
-from keras.callbacks import EarlyStopping
 from sentence_transformers import SentenceTransformer
 from nltk.tokenize import sent_tokenize
 import pandas as pd

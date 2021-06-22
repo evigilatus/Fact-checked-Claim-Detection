@@ -25,7 +25,7 @@ Use the following command to install all necessary dependencies:
 `
 ## Installation
 The project consists of multiple experiments that can be easily run through the CLI using the commands outlined below and the 
-[pretrained models and embeddings](https://unisofiafaculty-my.sharepoint.com/:f:/g/personal/smartinovm_office365student_uni-sofia_bg/EjlhPsuoffxCuco5zS2kR8EBTmeNhASqae4x7PEAPsf_1g?e=DaejcQ)
+[pretrained models and embeddings](https://unisofiafaculty-my.sharepoint.com/:f:/g/personal/smartinovm_office365student_uni-sofia_bg/EjlhPsuoffxCuco5zS2kR8EBbc9DyPWDyuSD06eLRkxCFw?e=1Hxt6W)
 that we have provided.
 
 ### S-BERT Experiment

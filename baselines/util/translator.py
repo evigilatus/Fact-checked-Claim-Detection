@@ -26,6 +26,7 @@ print([tokenizer.decode(t, skip_special_tokens=True) for t in translated])
 import csv
 import os
 import json
+import torch
 from glob import glob
 from nltk.tokenize import sent_tokenize
 from transformers import MarianMTModel, MarianTokenizer
@@ -37,15 +38,16 @@ class Translator:
 
     def __init__(self, model_name, lang_prefix):
         self.tokenizer = MarianTokenizer.from_pretrained(model_name)
-        self.model = MarianMTModel.from_pretrained(model_name)
+        self.model = MarianMTModel.from_pretrained(model_name).to('cuda').half()
         self.lang_prefix = lang_prefix
 
     def translate(self, src_text):
         translated = self.model.generate(
             **self.tokenizer(
                 self.prepare_text(src_text), return_tensors="pt", padding=True
-            )
+            ).to('cuda')
         )
+        
         return [self.tokenizer.decode(t, skip_special_tokens=True) for t in translated]
 
     def prepare_text(self, text):
@@ -79,7 +81,7 @@ def back_translate_tsv_tweets():
 
 
 def back_translate_tweet_jsons():
-    dir = os.path.join("..", "data", "subtask-2a--english", "vclaims")
+    dir = os.path.join("..", "..", "data", "subtask-2a--english", "vclaims")
     file_names = glob(dir + "/*.json")
     for file_name in sorted(file_names):
         out_name = file_name.replace(".json", "_tr.json")
@@ -101,7 +103,7 @@ def back_translate_tweet_jsons():
 
 
 def translate_processed_tweets(en_ar, ar_en):
-    dir = os.path.join(os.path.dirname(__file__), "..", "data", "subtask-2a--english", "test_data")
+    dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "subtask-2a--english", "test_data")
     print(dir)
     input_file_name = os.path.join(dir, "processed-tweets-test.tsv")
     output_file_name = input_file_name.replace(".tsv", "_tr.tsv")
@@ -120,7 +122,7 @@ def translate_processed_tweets(en_ar, ar_en):
 if __name__ == "__main__":
     en_ar = Translator(*Translator.EN_AR)
     ar_en = Translator(*Translator.AR_EN)
-    dir = os.path.join(os.path.dirname(__file__), "..", "data", "subtask-2b--english", "politifact-vclaims")
+    dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "subtask-2b--english", "politifact-vclaims")
     print(dir)
     file_names = glob(dir + "/*.json")
     for file_name in sorted(file_names):
@@ -140,4 +142,5 @@ if __name__ == "__main__":
                 content["vclaim"] = Translator.back_translate(
                     en_ar, ar_en, content["vclaim"]
                 )
+                
             json.dump(content, output, indent=None)

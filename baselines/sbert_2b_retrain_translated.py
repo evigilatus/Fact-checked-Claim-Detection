@@ -240,10 +240,11 @@ def retrain_classifier(model, train_labels, train_embeddings, vclaim_embeddings)
     logging.info(f"Train embeddings shape-{train_embeddings.reshape((-1, num_sentences))}")
     logging.info(f"Train labels shape-{train_labels.reshape((-1, 1))}")
 
-    callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=2)
-
-    model.fit(train_embeddings.reshape((-1, num_sentences)),
-              train_labels.reshape((-1, 1)),
+    callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
+    te = train_embeddings.reshape((-1, num_sentences))
+    tl = train_labels.reshape((-1, 1))
+    model.fit(te,
+              tl,
               epochs=30,
               batch_size=2048,
               callbacks=[callback]
@@ -322,8 +323,9 @@ def run_baselines(args):
             all_translated_iclaims = pd.read_csv('data/subtask-2b--english/v1/iclaims.queries', sep='\t',
                                                  names=['iclaim_id', 'iclaim'])
             translated_vclaims, translated_vclaims_list = load_vclaims(args.translated_vclaims_dir_path)
+            translated_labels = get_labels(train_dataset.vclaim_id, translated_vclaims)
             translated_train_encodings, translated_vclaim_encodings = get_translated_encodings(args, all_translated_iclaims, train_dataset, translated_vclaims_list)
-            classifier = retrain_classifier(classifier, train_labels, translated_train_encodings, translated_vclaim_encodings)
+            classifier = retrain_classifier(classifier, translated_labels, translated_train_encodings, translated_vclaim_encodings)
             logging.info(f"Loaded model from {args.weights_path}")
             model_json = classifier.to_json()
             with open("model/2b/translated_similarity/classifier.json", "w") as json_file:

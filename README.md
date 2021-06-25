@@ -42,4 +42,6 @@ that we have provided.
 `python baselines/bm25.py --train-file-path=baselines/v1/train.tsv --dev-file-path=baselines/v1/train.tsv --vclaims-dir-path=baselines/politifact-vclaims --iclaims-file-path=baselines/v1/iclaims.queries --subtask=2b --lang=english`
 
 ### RankSVM Experiment
+Download [Cornell SVMRank](http://www.cs.cornell.edu/people/tj/svm_light/svm_rank.html).
+
 Run all cells in the following Jupyter notebook `rankSVM_cornell/Generate_RankSVM_File.ipynb`

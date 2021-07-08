@@ -27,7 +27,7 @@ random.seed(0)
 ROOT_DIR = dirname(dirname(__file__))
 
 sbert = SentenceTransformer('paraphrase-distilroberta-base-v1')
-num_sentences = 4
+num_sentences = 5
 
 
 def load_dataset(ids_fp, pairs_fp):
@@ -297,7 +297,7 @@ def run_baselines(args):
 # python baselines/classifier.py --train-file-path=data/subtask-2a--english/qrels-train.tsv --dev-file-path=data/subtask-2a--english/qrels-dev.tsv --vclaims-dir-path=data/subtask-2a--english/vclaims --iclaims-file-path=data/subtask-2a--english/tweets-train-dev.tsv --subtask=2a --lang=english --iclaims-embeddings-path=embeddings/2a/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2a/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2a/dclaims_embeddings.npy --train-embeddings-path=embeddings/2a/tclaims_embeddings.npy
 
 # train 2b
-# python baselines/classifier.py --train-file-path=data/subtask-2b--english/v1/train.tsv --dev-file-path=data/subtask-2b--english/v1/dev.tsv --vclaims-dir-path=data/subtask-2b--english/politifact-vclaims --iclaims-file-path=data/subtask-2b--english/v1/iclaims.queries --subtask=2b --lang=english --iclaims-embeddings-path=embeddings/2b/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2b/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2b/dclaims_embeddings.npy --train-embeddings-path=embeddings/2b/tclaims_embeddings.npy --store-model=true
+# python baselines/classifier.py --train-file-path=data/subtask-2b--english/v1/train.tsv --dev-file-path=data/subtask-2b--english/v1/dev.tsv --vclaims-dir-path=data/subtask-2b--english/politifact-vclaims --iclaims-file-path=data/subtask-2b--english/v1/iclaims.queries --subtask=2b --lang=english --iclaims-embeddings-path=embeddings/2b/iclaims_embeddings.npy --vclaims-embeddings-path=embeddings/2b/vclaims_embeddings.npy --dev-embeddings-path=embeddings/2b/dclaims_embeddings.npy --train-embeddings-path=embeddings/2b/tclaims_embeddings.npy
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
